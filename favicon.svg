@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="风险监测平台">
+  <rect width="64" height="64" rx="16" fill="#173548"/>
+  <path d="M18 16h19.5C45.5 16 50 20.2 50 27c0 5-2.7 8.6-7.8 10.1L52 48H41.2l-8.4-9.8h-5V48H18V16Zm9.8 8v7h8.4c2.6 0 4-1.2 4-3.5s-1.4-3.5-4-3.5h-8.4Z" fill="#8fd8ce"/>
+</svg>
