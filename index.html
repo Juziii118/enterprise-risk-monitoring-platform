@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>企业流水风险监测平台</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <section id="loginView" class="login-view">
+    <div class="login-decoration decoration-one"></div>
+    <div class="login-decoration decoration-two"></div>
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="brand-mark">R</div>
+        <div>
+          <div class="brand-name">风险监测平台</div>
+          <div class="brand-subtitle">企业流水反欺诈</div>
+        </div>
+      </div>
+      <div class="login-heading">
+        <div class="eyebrow">Secure workspace</div>
+        <h1>登录平台</h1>
+        <p>请输入账户信息，系统将根据账户格式识别登录身份</p>
+      </div>
+      <div class="login-fields">
+        <label class="login-field"><span>登录账户</span><input id="loginAccount" type="text" autocomplete="username" placeholder="请输入登录账户" /></label>
+        <label class="login-field"><span>登录密码</span><input id="loginPassword" type="password" autocomplete="current-password" placeholder="请输入登录密码" /></label>
+      </div>
+      <label class="remember-option"><input id="rememberPassword" type="checkbox" /><span class="remember-box"></span><span>记住密码</span></label>
+      <div class="login-hint">当前已配置运营人员测试账号：001@jxphzx.com</div>
+      <button id="loginButton" class="button primary login-button">进入平台 <span>→</span></button>
+      <div class="login-footer"><span class="status-dot"></span> 演示环境 · 登录身份仅用于页面权限演示</div>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell hidden-app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">R</div>
+        <div>
+          <div class="brand-name">风险监测平台</div>
+          <div class="brand-subtitle">企业流水反欺诈</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section-label"><span>业务工作台</span><button id="sidebarToggle" class="sidebar-pin" title="收起导航" aria-label="收起导航">📌</button></div>
+      <button id="sidebarExpand" class="sidebar-expand" title="展开导航" aria-label="展开导航">›</button>
+      <nav class="main-nav" aria-label="主导航">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌂</span><span>工作台</span></button>
+        <button class="nav-item" data-view="preloan"><span class="nav-icon">⌕</span><span>贷前筛查</span><span class="nav-pill">即时</span></button>
+        <div class="nav-group">
+          <button class="nav-item" data-view="postloan"><span class="nav-icon">◷</span><span>贷中监控</span><span class="nav-pill accent">月度</span></button>
+          <button class="nav-subitem" data-view="listManagement"><span class="subnav-line"></span><span>名单管理</span></button>
+        </div>
+      </nav>
+
+      <div id="systemManagementSection" class="sidebar-section-label sidebar-section-secondary"><span>系统管理</span></div>
+      <nav id="systemManagementNav" class="main-nav log-nav" aria-label="系统管理导航">
+        <button class="nav-item log-nav-item" data-view="logs"><span class="nav-icon">▤</span><span>日志管理</span><span class="nav-pill">审计</span></button>
+        <button id="permissionsNav" class="nav-item log-nav-item permission-nav-item hidden-app" data-view="permissions"><span class="nav-icon">⚿</span><span>权限管理</span><span class="nav-pill">管理员</span></button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="data-status">
+          <span class="status-dot"></span>
+          <div>
+            <div class="status-title">数据服务正常</div>
+            <div class="status-meta">最近更新：2026-08-25 08:30</div>
+          </div>
+        </div>
+        <div class="user-card">
+          <div class="avatar">无</div>
+          <div class="user-text">
+            <strong id="sidebarUserName">未登录</strong>
+            <span id="sidebarInstitution">用户</span>
+          </div>
+          <div class="user-actions">
+            <button id="sidebarMore" class="more" title="更多操作" aria-label="更多操作">•••</button>
+            <div id="sidebarUserMenu" class="user-menu sidebar-user-menu"><button id="logoutButton" type="button">注销</button></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="breadcrumb"><span>企业流水风险监测平台</span><b>/</b><strong id="breadcrumbTitle">总览</strong></div>
+        <div class="topbar-actions">
+          <button class="icon-button" title="通知" aria-label="通知"><span class="notification-dot"></span>♢</button>
+          <div class="topbar-user-wrap">
+            <button id="topbarUser" class="topbar-user" aria-expanded="false"><span class="avatar small">无</span><span id="topbarUserName">未登录</span><span class="chevron">⌄</span></button>
+            <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="renameUserButton" type="button">修改名称</button></div>
+          </div>
+        </div>
+      </header>
+
+      <section id="dashboardView" class="view active-view"></section>
+      <section id="preloanView" class="view"></section>
+      <section id="postloanView" class="view"></section>
+      <section id="listManagementView" class="view"></section>
+      <section id="logsView" class="view"></section>
+      <section id="permissionsView" class="view"></section>
+    </main>
+  </div>
+
+  <div id="listManageModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="listManageModalTitle">
+    <div class="modal list-manage-modal">
+      <div class="modal-header">
+        <div><div class="eyebrow">Monthly monitoring list</div><h2 id="listManageModalTitle">名单管理</h2></div>
+        <button class="modal-close" data-close-list-modal aria-label="关闭">×</button>
+      </div>
+      <div id="listManageModalBody" class="modal-body"></div>
+      <div class="modal-footer list-modal-footer">
+        <button class="button secondary" data-close-list-modal>取消</button>
+        <button id="restoreListButton" class="button teal">恢复月度跑数</button>
+        <button id="stopListButton" class="button ghost danger-button">中止月度跑数</button>
+        <button id="deleteListButton" class="button danger">删除名单</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="institutionModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="institutionModalTitle">
+    <div class="modal institution-modal">
+      <div class="modal-header">
+        <div><div class="eyebrow">Bank institution</div><h2 id="institutionModalTitle">新增银行机构</h2></div>
+        <button class="modal-close" data-close-institution-modal aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="institution-form-field"><span>银行机构名称</span><input id="institutionNameInput" class="search-input" type="text" placeholder="请输入银行机构名称" maxlength="40" /></label>
+        <p class="modal-help-text">新增后，该机构将加入贷前筛查和贷中名单导入的可选项。</p>
+      </div>
+      <div class="modal-footer">
+        <button class="button secondary" data-close-institution-modal>取消</button>
+        <button id="saveInstitutionButton" class="button primary">保存并选择</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="permissionModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="permissionModalTitle">
+    <div class="modal permission-modal">
+      <div class="modal-header">
+        <div><div class="eyebrow">Account & permission</div><h2 id="permissionModalTitle">新增账号</h2></div>
+        <button class="modal-close" data-close-permission-modal aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="permission-form-grid">
+          <label class="permission-field"><span>登录账户</span><input id="permissionAccount" class="search-input" type="text" placeholder="如：003@jxphzx.com" /></label>
+          <label class="permission-field"><span>账号类型</span><select id="permissionType" class="select-input"><option value="operator">运营账号</option><option value="bank">银行机构用户</option></select></label>
+          <label class="permission-field"><span>所属机构</span><select id="permissionInstitution" class="select-input"></select></label>
+          <label class="permission-field"><span>权限级别</span><select id="permissionLevel" class="select-input"><option value="最高权限">最高权限</option><option value="业务操作">业务操作</option><option value="只读查看">只读查看</option></select></label>
+          <label class="permission-field"><span>账号状态</span><select id="permissionStatus" class="select-input"><option value="有效">有效</option><option value="无效">无效</option></select></label>
+        </div>
+        <div class="ai-summary permission-note"><strong>权限说明：</strong>默认管理员可维护全部账号；最高权限账号可维护业务操作账号；业务操作运营账号可新增账号。</div>
+      </div>
+      <div class="modal-footer">
+        <button class="button secondary" data-close-permission-modal>取消</button>
+        <button id="savePermissionButton" class="button primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="aiModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle">
+    <div class="modal ai-modal">
+      <div class="modal-header">
+        <div>
+          <div class="eyebrow">AI辅助结果解读</div>
+          <h2 id="aiModalTitle">风险解读</h2>
+        </div>
+        <button class="modal-close" data-close-modal aria-label="关闭">×</button>
+      </div>
+      <div id="aiModalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <span class="ai-disclaimer">AI仅对后台策略输出的风险等级和风险事件进行归集与解释，不改变风险等级判断。</span>
+        <button class="button secondary" data-close-modal>关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="dashboardEventModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="dashboardEventModalTitle">
+    <div class="modal dashboard-event-modal">
+      <div class="modal-header">
+        <div>
+          <div class="eyebrow">Risk event enterprises</div>
+          <h2 id="dashboardEventModalTitle">风险事件企业明细</h2>
+        </div>
+        <button class="modal-close" data-close-dashboard-event-modal aria-label="关闭">×</button>
+      </div>
+      <div id="dashboardEventModalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <span class="modal-help-text">企业按名称升序展示，风险事件为该企业当月触发的全部事件。</span>
+        <button class="button secondary" data-close-dashboard-event-modal>关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
