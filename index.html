@@ -53,6 +53,7 @@
         <div class="nav-group">
           <button class="nav-item" data-view="postloan"><span class="nav-icon">◷</span><span>贷中监控</span><span class="nav-pill accent">月度</span></button>
           <button class="nav-subitem" data-view="listManagement"><span class="subnav-line"></span><span>名单管理</span></button>
+          <button class="nav-subitem" data-view="anomalyAlerts"><span class="subnav-line"></span><span>异常提示</span></button>
         </div>
       </nav>
 
@@ -88,7 +89,10 @@
       <header class="topbar">
         <div class="breadcrumb"><span>企业流水风险监测平台</span><b>/</b><strong id="breadcrumbTitle">总览</strong></div>
         <div class="topbar-actions">
-          <button class="icon-button" title="通知" aria-label="通知"><span class="notification-dot"></span>♢</button>
+          <div id="notificationWrap" class="notification-wrap">
+            <button id="riskChangeNotification" class="icon-button notification-button" type="button" title="暂无消息提示" aria-label="暂无消息提示" aria-expanded="false" aria-controls="riskChangeNotificationTip"><span id="riskChangeNotificationDot" class="notification-dot hidden-app"></span>♢</button>
+            <div id="riskChangeNotificationTip" class="notification-popover" role="status"><div class="notification-empty">暂无消息提示</div></div>
+          </div>
           <div class="topbar-user-wrap">
             <button id="topbarUser" class="topbar-user" aria-expanded="false"><span class="avatar small">无</span><span id="topbarUserName">未登录</span><span class="chevron">⌄</span></button>
             <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="renameUserButton" type="button">修改名称</button></div>
@@ -100,6 +104,7 @@
       <section id="preloanView" class="view"></section>
       <section id="postloanView" class="view"></section>
       <section id="listManagementView" class="view"></section>
+      <section id="anomalyAlertsView" class="view"></section>
       <section id="logsView" class="view"></section>
       <section id="permissionsView" class="view"></section>
     </main>

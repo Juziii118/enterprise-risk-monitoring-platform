@@ -19,6 +19,11 @@ const state = {
   preloanHistoryEndDate: "",
   postloanPage: 1,
   listPage: 1,
+  anomalyPage: 1,
+  anomalyBankFilter: "all",
+  anomalyListFilter: "all",
+  anomalyCurrentLevelFilter: "all",
+  anomalyPreviousLevelFilter: "all",
   listBankFilter: "all",
   listIdQuery: "",
   listImportBank: "",
@@ -112,7 +117,7 @@ function formatDate(date) {
 function buildListRecords() {
   const base = new Date("2026-08-25T09:18:42");
   const samples = [
-    { bankName: "江西银行", companyCount: 8, status: "有效" },
+    { bankName: "江西银行", companyCount: 9, status: "有效" },
     { bankName: "九江银行", companyCount: 7, status: "有效" },
     { bankName: "南昌农商银行", companyCount: 6, status: "有效" },
     { bankName: "赣州银行", companyCount: 8, status: "有效" },
@@ -215,14 +220,14 @@ function buildCurrentPostloanDataset() {
     .filter(batch => monthKeyFromBatch(batch.month) !== currentMonitorMonth && existingListIds.has(batch.listId))
     .map(batch => {
       const list = state.listRecords.find(item => item.id === batch.listId);
-      const seed = monthKeyFromBatch(batch.month) === "2026/06" ? 8 : 9;
+      const seed = monthKeyFromBatch(batch.month) === "2026/06" ? 9 : 8;
       const rows = buildDemoResults(seed, list.id, list.bankName).slice(0, list.companyCount);
       const counts = riskCountsForRows(rows);
       return { ...batch, total: rows.length, ...counts };
     });
   const historicalBatches = retainedHistory.length ? retainedHistory : [
-    { month: "2026年06月", range: "2026-06-01 — 2026-06-30", time: "2026-07-06 10:02", seed: 8 },
-    { month: "2026年05月", range: "2026-05-01 — 2026-05-31", time: "2026-06-05 09:42", seed: 9 }
+    { month: "2026年06月", range: "2026-06-01 — 2026-06-30", time: "2026-07-06 10:02", seed: 9 },
+    { month: "2026年05月", range: "2026-05-01 — 2026-05-31", time: "2026-06-05 09:42", seed: 8 }
   ].filter((template, index) => activeLists.length && activeLists[index]).map((template, index) => {
     const list = activeLists[index];
     const rows = buildDemoResults(template.seed, list.id, list.bankName).slice(0, list.companyCount);
@@ -230,6 +235,23 @@ function buildCurrentPostloanDataset() {
     return { month: template.month, range: template.range, total: rows.length, ...counts, status: "已完成", time: template.time, listId: list.id, bankName: list.bankName };
   });
   state.batches = [...currentBatches.map(({ rows, ...batch }) => batch), ...historicalBatches];
+}
+
+function currentRiskChangeAlerts() {
+  buildCurrentPostloanDataset();
+  const activeLists = state.listRecords.filter(list => list.status === "有效" && belongsToCurrentBank(list.bankName));
+  const activeListIds = new Set(activeLists.map(list => list.id));
+  const previousLevelByEnterprise = new Map();
+  activeLists.forEach(list => {
+    buildDemoResults(9, list.id, list.bankName).slice(0, list.companyCount).forEach(row => {
+      previousLevelByEnterprise.set(`${list.id}::${row.code}`, row.level);
+    });
+  });
+  return state.postloanResults
+    .filter(row => activeListIds.has(row.listId))
+    .map(row => ({ ...row, previousLevel: previousLevelByEnterprise.get(`${row.listId}::${row.code}`) || "none" }))
+    .filter(row => ["medium", "high"].includes(row.level) && ["none", "low"].includes(row.previousLevel))
+    .sort((a, b) => a.name.localeCompare(b.name, "zh-CN") || a.bankName.localeCompare(b.bankName, "zh-CN") || a.listId.localeCompare(b.listId));
 }
 
 state.listRecords = buildListRecords();
@@ -646,6 +668,7 @@ function renderDashboard() {
   if (demoAccounts[state.currentAccount]?.role === "operator") renderOperatorDashboard();
   else if (isBankUser()) renderScopedBankDashboard();
   else renderBankDashboard();
+  updateRiskChangeNotification();
 }
 
 function resultRows(results, type, includeListId = false, includeBank = false) {
@@ -793,6 +816,42 @@ function renderListManagement() {
   document.querySelectorAll("[data-page-key='listPage']").forEach(button => button.addEventListener("click", () => { if (!button.disabled) { state.listPage = Number(button.dataset.page); renderListManagement(); } }));
   document.querySelectorAll("[data-download-list]").forEach(button => button.addEventListener("click", () => downloadList(button.dataset.downloadList)));
   document.querySelectorAll("[data-manage-list]").forEach(button => button.addEventListener("click", () => openListManageModal(button.dataset.manageList)));
+  updateRiskChangeNotification();
+}
+
+function filteredRiskChangeAlerts(rows) {
+  return rows.filter(row => {
+    const bankMatched = state.anomalyBankFilter === "all" || row.bankName === state.anomalyBankFilter;
+    const listMatched = state.anomalyListFilter === "all" || row.listId === state.anomalyListFilter;
+    const currentLevelMatched = state.anomalyCurrentLevelFilter === "all" || row.level === state.anomalyCurrentLevelFilter;
+    const previousLevelMatched = state.anomalyPreviousLevelFilter === "all" || row.previousLevel === state.anomalyPreviousLevelFilter;
+    return bankMatched && listMatched && currentLevelMatched && previousLevelMatched;
+  });
+}
+
+function renderAnomalyAlerts() {
+  const view = document.querySelector("#anomalyAlertsView");
+  const rows = currentRiskChangeAlerts();
+  const filtered = filteredRiskChangeAlerts(rows);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / 20));
+  const page = Math.min(Math.max(1, state.anomalyPage), totalPages);
+  state.anomalyPage = page;
+  const pageRows = filtered.slice((page - 1) * 20, page * 20);
+  const bankOptions = [...new Set(rows.map(row => row.bankName).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
+  const listOptions = [...new Set(rows.map(row => row.listId).filter(Boolean))].sort();
+  const includeBank = !isBankUser();
+  const bankFilter = includeBank ? `<select class="select-input" id="anomalyBankFilter"><option value="all">全部银行机构</option>${bankOptions.map(bank => `<option value="${escapeHTML(bank)}" ${state.anomalyBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select>` : "";
+  const filters = `${bankFilter}<select class="select-input list-filter-input" id="anomalyListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.anomalyListFilter === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select><select class="select-input" id="anomalyCurrentLevelFilter"><option value="all">全部本月风险等级</option><option value="high" ${state.anomalyCurrentLevelFilter === "high" ? "selected" : ""}>高风险</option><option value="medium" ${state.anomalyCurrentLevelFilter === "medium" ? "selected" : ""}>中风险</option></select><select class="select-input" id="anomalyPreviousLevelFilter"><option value="all">全部上月风险等级</option><option value="low" ${state.anomalyPreviousLevelFilter === "low" ? "selected" : ""}>低风险</option><option value="none" ${state.anomalyPreviousLevelFilter === "none" ? "selected" : ""}>无风险</option></select>`;
+  const bankHeader = includeBank ? "<th>银行机构</th>" : "";
+  const colSpan = includeBank ? 7 : 6;
+  const body = pageRows.length ? pageRows.map(row => `<tr><td><strong>${escapeHTML(row.name)}</strong></td><td class="muted-text">${escapeHTML(row.code)}</td><td><span class="list-id table-list-id">${escapeHTML(row.listId)}</span></td>${includeBank ? `<td>${escapeHTML(row.bankName)}</td>` : ""}<td>${riskBadge(row.level)}</td><td>${riskBadge(row.previousLevel)}</td><td><div class="rule-tags">${formatRiskEvents(row.events || [])}</div></td></tr>`).join("") : `<tr><td colspan="${colSpan}"><div class="empty-state">没有符合条件的异常风险变动企业</div></td></tr>`;
+  view.innerHTML = `<div class="page-heading"><div><div class="eyebrow">Risk movement alerts</div><h1>异常提示</h1><p>展示当前月度有效贷中名单中，由上月无风险或低风险上升为本月中风险或高风险的企业。</p></div></div><div class="panel anomaly-panel"><div class="panel-header"><div><h3>当前月度风险异常变动</h3><p>共 ${rows.length} 家企业 · 默认按企业名称升序排列 · 每页最多展示20家</p></div><div class="anomaly-filter-toolbar">${filters}</div></div><div class="table-wrap anomaly-table-wrap"><table class="data-table anomaly-table"><thead><tr><th>企业名称</th><th>组织机构代码</th><th>名单编号</th>${bankHeader}<th>本月风险等级</th><th>上月风险等级</th><th>风险事件</th></tr></thead><tbody>${body}</tbody></table></div>${paginationMarkup(filtered.length, page, "anomalyPage", 20)}</div>`;
+  if (includeBank) document.querySelector("#anomalyBankFilter").addEventListener("change", event => { state.anomalyBankFilter = event.target.value; state.anomalyPage = 1; renderAnomalyAlerts(); });
+  document.querySelector("#anomalyListFilter").addEventListener("change", event => { state.anomalyListFilter = event.target.value; state.anomalyPage = 1; renderAnomalyAlerts(); });
+  document.querySelector("#anomalyCurrentLevelFilter").addEventListener("change", event => { state.anomalyCurrentLevelFilter = event.target.value; state.anomalyPage = 1; renderAnomalyAlerts(); });
+  document.querySelector("#anomalyPreviousLevelFilter").addEventListener("change", event => { state.anomalyPreviousLevelFilter = event.target.value; state.anomalyPage = 1; renderAnomalyAlerts(); });
+  document.querySelectorAll("[data-page-key='anomalyPage']").forEach(button => button.addEventListener("click", () => { if (!button.disabled) { state.anomalyPage = Number(button.dataset.page); renderAnomalyAlerts(); } }));
+  updateRiskChangeNotification();
 }
 
 function downloadList(listId) {
@@ -1287,6 +1346,7 @@ function renderPostloan() {
   document.querySelector("#batchEndDate").addEventListener("change", event => { state.batchEndDate = event.target.value; renderPostloan(); });
   document.querySelectorAll("[data-batch-export]").forEach(button => button.addEventListener("click", () => exportResults(currentResults, `${button.dataset.batchExport}贷中监控结果`, true)));
   bindResultEvents(currentResults, "postloan");
+  updateRiskChangeNotification();
 }
 
 function openDashboardEventModal(mode, eventName) {
@@ -1374,22 +1434,80 @@ function updatePermissionNavVisibility() {
   document.querySelector("#permissionsNav").classList.toggle("hidden-app", isBankUser || !state.hasPermissionAdmin);
 }
 
-function renderCurrentView() { if (state.currentView === "dashboard") renderDashboard(); if (state.currentView === "preloan") renderPreloan(); if (state.currentView === "postloan") renderPostloan(); if (state.currentView === "listManagement") renderListManagement(); if (state.currentView === "logs") renderLogs(); if (state.currentView === "permissions") renderPermissions(); }
+function renderCurrentView() { if (state.currentView === "dashboard") renderDashboard(); if (state.currentView === "preloan") renderPreloan(); if (state.currentView === "postloan") renderPostloan(); if (state.currentView === "listManagement") renderListManagement(); if (state.currentView === "anomalyAlerts") renderAnomalyAlerts(); if (state.currentView === "logs") renderLogs(); if (state.currentView === "permissions") renderPermissions(); }
 
 function switchView(view) {
   if (view === "permissions" && !state.hasPermissionAdmin) { showToast("当前账号暂无权限访问权限管理"); return; }
-  state.currentView = view; state.query = ""; state.selectedRisk = "all"; state.preloanListFilter = "all"; state.preloanResultBankFilter = "all"; state.postBankFilter = "all"; state.postListQuery = ""; state.listBankFilter = "all"; state.listIdQuery = ""; state.batchMonthFilter = "all"; state.batchListFilter = "all"; state.batchBankFilter = "all"; state.batchStartDate = ""; state.batchEndDate = "";
-  const parentView = view === "listManagement" ? "postloan" : view;
+  state.currentView = view; state.query = ""; state.selectedRisk = "all"; state.preloanListFilter = "all"; state.preloanResultBankFilter = "all"; state.postBankFilter = "all"; state.postListQuery = ""; state.listBankFilter = "all"; state.listIdQuery = ""; state.batchMonthFilter = "all"; state.batchListFilter = "all"; state.batchBankFilter = "all"; state.batchStartDate = ""; state.batchEndDate = ""; state.anomalyPage = 1; state.anomalyBankFilter = "all"; state.anomalyListFilter = "all"; state.anomalyCurrentLevelFilter = "all"; state.anomalyPreviousLevelFilter = "all";
+  const parentView = ["listManagement", "anomalyAlerts"].includes(view) ? "postloan" : view;
   document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === parentView));
   document.querySelectorAll(".nav-subitem").forEach(item => item.classList.toggle("active", item.dataset.view === view));
   document.querySelectorAll(".view").forEach(section => section.classList.remove("active-view"));
   document.querySelector(`#${view}View`).classList.add("active-view");
-  document.querySelector("#breadcrumbTitle").textContent = { dashboard: "总览", preloan: "贷前筛查", postloan: "贷中监控", listManagement: "名单管理", logs: "日志管理", permissions: "权限管理" }[view];
+  document.querySelector("#breadcrumbTitle").textContent = { dashboard: "总览", preloan: "贷前筛查", postloan: "贷中监控", listManagement: "名单管理", anomalyAlerts: "异常提示", logs: "日志管理", permissions: "权限管理" }[view];
   renderCurrentView();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function showToast(message) { const toast = document.querySelector("#toast"); toast.textContent = message; toast.classList.add("show"); clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => toast.classList.remove("show"), 2400); }
+
+function notificationReadStorageKey() {
+  return `riskMonitorReadNotifications:${state.currentAccount}`;
+}
+
+function readNotificationIds() {
+  if (state.currentAccount === "未登录") return new Set();
+  try {
+    return new Set(JSON.parse(localStorage.getItem(notificationReadStorageKey()) || "[]"));
+  } catch (error) {
+    localStorage.removeItem(notificationReadStorageKey());
+    return new Set();
+  }
+}
+
+function notificationMessages() {
+  if (state.currentAccount === "未登录") return [];
+  const count = currentRiskChangeAlerts().length;
+  if (!count) return [];
+  const scope = isBankUser() ? currentBankInstitution() : "all-banks";
+  return [{
+    id: `risk-change:v3:2026-08:${scope}`,
+    message: `本月有${count}家企业发生异常风险变动。`,
+    targetView: "anomalyAlerts"
+  }];
+}
+
+function markNotificationRead(notificationId) {
+  const readIds = readNotificationIds();
+  readIds.add(notificationId);
+  localStorage.setItem(notificationReadStorageKey(), JSON.stringify([...readIds]));
+}
+
+function closeNotificationPopover() {
+  const wrap = document.querySelector("#notificationWrap");
+  const button = document.querySelector("#riskChangeNotification");
+  if (!wrap || !button) return;
+  wrap.classList.remove("open");
+  button.setAttribute("aria-expanded", "false");
+}
+
+function updateRiskChangeNotification() {
+  const button = document.querySelector("#riskChangeNotification");
+  const dot = document.querySelector("#riskChangeNotificationDot");
+  const tip = document.querySelector("#riskChangeNotificationTip");
+  if (!button || !dot || !tip) return;
+  const readIds = readNotificationIds();
+  const unreadMessages = notificationMessages().filter(item => !readIds.has(item.id));
+  const hasUnread = unreadMessages.length > 0;
+  const accessibleMessage = hasUnread ? `有${unreadMessages.length}条未读消息提示` : "暂无消息提示";
+  dot.classList.toggle("hidden-app", !hasUnread);
+  button.classList.toggle("has-alerts", hasUnread);
+  button.title = accessibleMessage;
+  button.setAttribute("aria-label", accessibleMessage);
+  tip.innerHTML = hasUnread
+    ? unreadMessages.map(item => `<button class="notification-item" type="button" data-notification-id="${escapeHTML(item.id)}" data-target-view="${escapeHTML(item.targetView)}"><span>${escapeHTML(item.message)}</span><span class="notification-item-arrow">›</span></button>`).join("")
+    : `<div class="notification-empty">暂无消息提示</div>`;
+}
 
 function toggleSidebar(collapsed) {
   state.sidebarCollapsed = collapsed;
@@ -1459,6 +1577,8 @@ function logoutPlatform() {
   updateUserIdentityUI();
   updatePermissionNavVisibility();
   closeTopbarUserMenu();
+  closeNotificationPopover();
+  updateRiskChangeNotification();
 }
 
 function enterPlatform() {
@@ -1506,6 +1626,7 @@ function enterPlatform() {
   updateUserIdentityUI();
   updatePermissionNavVisibility();
   if (state.currentView === "dashboard") renderDashboard();
+  updateRiskChangeNotification();
   recordLog("登录成功", "平台账户", profile.institution);
   showToast(`已以${profile.name}身份进入平台`);
 }
@@ -1527,9 +1648,28 @@ try {
 document.querySelector("#sidebarToggle").addEventListener("click", () => toggleSidebar(true));
 document.querySelector("#sidebarExpand").addEventListener("click", () => toggleSidebar(false));
 document.querySelector("#topbarUser").addEventListener("click", event => { event.stopPropagation(); toggleTopbarUserMenu(); });
+document.querySelector("#riskChangeNotification").addEventListener("click", event => {
+  event.stopPropagation();
+  if (state.currentAccount === "未登录") return;
+  const wrap = document.querySelector("#notificationWrap");
+  const isOpen = wrap.classList.toggle("open");
+  event.currentTarget.setAttribute("aria-expanded", String(isOpen));
+});
+document.querySelector("#riskChangeNotificationTip").addEventListener("click", event => {
+  const item = event.target.closest("[data-notification-id]");
+  if (!item || state.currentAccount === "未登录") return;
+  event.stopPropagation();
+  markNotificationRead(item.dataset.notificationId);
+  closeNotificationPopover();
+  updateRiskChangeNotification();
+  switchView(item.dataset.targetView);
+});
 document.querySelector("#renameUserButton").addEventListener("click", renameCurrentUser);
 document.querySelector("#logoutButton").addEventListener("click", logoutPlatform);
-document.addEventListener("click", event => { if (!event.target.closest(".topbar-user-wrap")) closeTopbarUserMenu(); });
+document.addEventListener("click", event => {
+  if (!event.target.closest(".topbar-user-wrap")) closeTopbarUserMenu();
+  if (!event.target.closest("#notificationWrap")) closeNotificationPopover();
+});
 document.querySelectorAll(".nav-item, .nav-subitem").forEach(item => item.addEventListener("click", () => switchView(item.dataset.view)));
 document.querySelectorAll("[data-close-modal]").forEach(button => button.addEventListener("click", closeModal));
 document.querySelector("#aiModal").addEventListener("click", event => { if (event.target.id === "aiModal") closeModal(); });
