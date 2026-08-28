@@ -17,6 +17,7 @@ const state = {
   preloanHistoryListQuery: "all",
   preloanHistoryStartDate: "",
   preloanHistoryEndDate: "",
+  preloanSelectedListId: null,
   postloanPage: 1,
   listPage: 1,
   anomalyPage: 1,
@@ -60,6 +61,10 @@ const state = {
   permissionTypeFilter: "all",
   permissionStatusFilter: "all",
   permissionTargetAccount: null,
+  quotaPage: 1,
+  quotaRechargeAccount: "",
+  quotaAccounts: {},
+  quotaTransactions: [],
   batches: [
     { month: "2026年07月", range: "2026-07-01 — 2026-07-31", total: 46, high: 4, medium: 9, low: 4, none: 29, status: "已完成", time: "2026-08-05 09:18" },
     { month: "2026年06月", range: "2026-06-01 — 2026-06-30", total: 1241, high: 31, medium: 151, low: 64, none: 995, status: "已完成", time: "2026-07-06 10:02" },
@@ -93,7 +98,9 @@ const trendData = [
 
 const bankNames = ["江西银行", "九江银行", "南昌农商银行", "赣州银行", "上饶银行", "景德镇农商银行"];
 const logPageSize = 20;
-const logActions = ["登录成功", "导入名单", "查询结果", "导出结果", "删除名单", "中止名单监测", "登出平台", "修改名称"];
+const quotaPageSize = 10;
+const preloanQueryCharge = 5;
+const logActions = ["登录成功", "导入名单", "查询结果", "导出结果", "删除名单", "中止名单监测", "登出平台", "修改名称", "额度充值", "额度消费"];
 
 function pad(value) { return String(value).padStart(2, "0"); }
 
@@ -112,6 +119,12 @@ function formatDateTime(date) {
 
 function formatDate(date) {
   return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())}`;
+}
+
+function updateLiveDataTimestamp() {
+  const now = new Date();
+  const timestamp = document.querySelector("#lastUpdatedValue");
+  if (timestamp) timestamp.textContent = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
 function buildListRecords() {
@@ -275,6 +288,8 @@ state.preloanHistory = initialPreloanHistory.map(item => {
     queryAt: formatDateTime(item.date),
     dateKey: `${item.date.getFullYear()}-${pad(item.date.getMonth() + 1)}-${pad(item.date.getDate())}`,
     timestamp: item.date.getTime(),
+    queried: true,
+    charged: false,
     results
   };
 });
@@ -311,6 +326,109 @@ const accountFormats = [
   { role: "bank", pattern: /^[^@\s]+@[^@\s]+bank\.com$/i }
 ];
 const bankDomainInstitutions = { "jsbank.com": "江西银行", "jjbank.com": "九江银行" };
+
+const initialQuotaBalances = {
+  "001@jxphzx.com": 1000,
+  "002@jxphzx.com": 1000,
+  "003@jxphzx.com": 300,
+  "aaa@jsbank.com": 100,
+  "bbb@jjbank.com": 100,
+  "ccc@jsbank.com": 100
+};
+
+function initializeQuotaData() {
+  state.quotaAccounts = { ...initialQuotaBalances };
+  const seedDate = new Date("2026-08-25T09:30:00");
+  const accountNames = Object.keys(initialQuotaBalances).filter(account => !hasUnlimitedQuota(account));
+  state.quotaTransactions = accountNames.map((account, index) => {
+    const timestamp = seedDate.getTime() - index * 3600000;
+    return {
+      id: `QUOTA-INIT-${String(index + 1).padStart(3, "0")}`,
+      account,
+      delta: initialQuotaBalances[account],
+      balance: initialQuotaBalances[account],
+      type: "平台充值",
+      description: "演示账号初始额度",
+      operator: "平台运营中心",
+      timestamp,
+      time: formatDateTime(new Date(timestamp))
+    };
+  });
+}
+
+function quotaAccountKey(account = state.currentAccount) {
+  return String(account || "").trim().toLowerCase();
+}
+
+function hasUnlimitedQuota(account = state.currentAccount) {
+  const record = getPermissionRecord(account);
+  return record?.type === "运营账号" && record.permission === "最高权限" && record.status === "有效";
+}
+
+function canRechargeQuota(account = state.currentAccount) {
+  return hasUnlimitedQuota(account);
+}
+
+function quotaBalance(account = state.currentAccount) {
+  const key = quotaAccountKey(account);
+  if (hasUnlimitedQuota(key)) return Infinity;
+  return Number(state.quotaAccounts[key] || 0);
+}
+
+function formatQuotaValue(value) {
+  return Number.isFinite(Number(value)) ? Number(value).toLocaleString() : "不限";
+}
+
+function addQuotaTransaction(account, delta, type, description, operator = state.currentAccount) {
+  const key = quotaAccountKey(account);
+  const amount = Number(delta);
+  state.quotaAccounts[key] = quotaBalance(key) + amount;
+  const now = new Date();
+  state.quotaTransactions.unshift({
+    id: `QUOTA-${Date.now()}`,
+    account: key,
+    delta: amount,
+    balance: state.quotaAccounts[key],
+    type,
+    description,
+    operator,
+    timestamp: now.getTime(),
+    time: formatDateTime(now)
+  });
+}
+
+function consumeQuota(account, amount, description) {
+  if (hasUnlimitedQuota(account)) return true;
+  if (quotaBalance(account) < amount) {
+    showToast(`当前账号额度不足，本次操作需要 ${amount} 币`);
+    return false;
+  }
+  addQuotaTransaction(account, -amount, "贷前筛查消费", description);
+  recordLog("额度消费", description, state.currentInstitution);
+  return true;
+}
+
+function rechargeQuota(account, amount) {
+  if (!canRechargeQuota()) {
+    showToast("当前账号暂无额度充值权限");
+    return false;
+  }
+  const normalizedAmount = Number(amount);
+  if (!account || !Number.isInteger(normalizedAmount) || normalizedAmount <= 0) {
+    showToast("请输入正整数充值额度");
+    return false;
+  }
+  const target = getPermissionRecord(account);
+  if (!target || target.status !== "有效" || target.permission !== "业务操作") {
+    showToast("请选择有效的业务操作账号");
+    return false;
+  }
+  addQuotaTransaction(account, normalizedAmount, "额度充值", `为${account}充值`);
+  recordLog("额度充值", account, target.institution);
+  return true;
+}
+
+initializeQuotaData();
 
 function isBankUser() { return demoAccounts[state.currentAccount]?.role === "bank"; }
 
@@ -437,7 +555,7 @@ function currentMonthKey() {
 
 function currentPreloanResults() {
   const month = currentMonthKey();
-  return state.preloanHistory.filter(record => monthKeyFromDateKey(record.dateKey) === month && belongsToCurrentBank(record.bankName)).flatMap(record => record.results);
+  return state.preloanHistory.filter(record => record.queried !== false && monthKeyFromDateKey(record.dateKey) === month && belongsToCurrentBank(record.bankName)).flatMap(record => record.results);
 }
 
 function currentPostloanResults() {
@@ -473,7 +591,7 @@ function getDashboardOverview(mode, institution = "") {
   const scoped = Boolean(institution);
   if (mode === "preloan") {
     const monthMap = new Map();
-    const records = state.preloanHistory.filter(record => !scoped || record.bankName === institution);
+    const records = state.preloanHistory.filter(record => record.queried !== false && (!scoped || record.bankName === institution));
     records.forEach(record => {
       const month = monthKeyFromDateKey(record.dateKey);
       if (!monthMap.has(month)) monthMap.set(month, []);
@@ -678,8 +796,8 @@ function resultRows(results, type, includeListId = false, includeBank = false) {
     ${includeListId ? `<td><span class="list-id table-list-id">${escapeHTML(row.listId || "—")}</span></td>` : ""}
     ${includeBank ? `<td>${escapeHTML(row.bankName || "—")}</td>` : ""}
     <td>${escapeHTML(row.month)}</td>
-    <td><div class="rule-tags">${formatRiskEvents(row.events || [])}</div></td>
     <td>${riskBadge(row.level)}</td>
+    <td><div class="rule-tags">${formatRiskEvents(row.events || [])}</div></td>
     <td><div class="row-actions"><button class="text-button ai" data-result-code="${escapeHTML(row.code)}" data-result-list-id="${escapeHTML(row.listId || "")}" data-result-type="${type}">AI解读</button><button class="text-button" data-export-code="${escapeHTML(row.code)}" data-export-list-id="${escapeHTML(row.listId || "")}" data-result-type="${type}">导出</button></div></td>
   </tr>`).join("");
 }
@@ -702,7 +820,7 @@ function paginationMarkup(total, page, pageKey, size = pageSize, showTotal = tru
   return `<div class="result-pagination"><span>${showTotal ? `共 ${total} 家企业 · ` : ""}第 ${page}/${totalPages} 页</span><div class="page-controls"><button class="page-button" data-page-key="${pageKey}" data-page="${page - 1}" ${page === 1 ? "disabled" : ""}>‹</button>${pages}<button class="page-button" data-page-key="${pageKey}" data-page="${page + 1}" ${page === totalPages ? "disabled" : ""}>›</button></div></div>`;
 }
 
-function resultTable(results, type, title = "监测结果", description = "一家企业一行，多类风险事件合并展示", includeListId = false) {
+function resultTable(results, type, title = "监测结果", description = "一家企业一行，多类风险事件合并展示", includeListId = false, showScopeFilters = true) {
   const pageKey = `${type}Page`;
   const filtered = filteredResults(results, type);
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -715,25 +833,30 @@ function resultTable(results, type, title = "监测结果", description = "一�
   const includeBank = includeListId && !isBankUser();
   const bankFilterClass = isBankUser() ? " hidden-app" : "";
   const riskFilter = `<select class="select-input" id="riskFilter"><option value="all">全部风险等级</option><option value="high" ${state.selectedRisk === "high" ? "selected" : ""}>高风险</option><option value="medium" ${state.selectedRisk === "medium" ? "selected" : ""}>中风险</option><option value="low" ${state.selectedRisk === "low" ? "selected" : ""}>低风险</option><option value="none" ${state.selectedRisk === "none" ? "selected" : ""}>无风险</option></select>`;
-  const resultFilters = type === "postloan" ? `<select class="select-input${bankFilterClass}" id="postBankFilter"><option value="all">全部银行机构</option>${[...new Set(state.listRecords.map(item => item.bankName))].map(bank => `<option value="${escapeHTML(bank)}" ${state.postBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><select class="select-input list-filter-input" id="postListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.postListQuery === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select>` : type === "preloan" ? `<select class="select-input${bankFilterClass}" id="preloanResultBankFilter"><option value="all">全部银行机构</option>${resultBankOptions.map(bank => `<option value="${escapeHTML(bank)}" ${state.preloanResultBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><select class="select-input list-filter-input" id="preloanListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.preloanListFilter === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select>` : "";
-  return `<div class="panel result-panel"><div class="panel-header"><div><h3>${title}</h3><p>${description}</p></div><div class="result-toolbar"><input class="search-input" id="resultSearch" type="search" placeholder="搜索企业名称或代码" value="${escapeHTML(state.query)}"/>${riskFilter}${resultFilters}<button class="button ghost" id="exportAll">↓ 导出结果</button></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>企业名称 / 组织机构代码</th>${includeListId ? "<th>名单编号</th>" : ""}${includeBank ? "<th>银行机构</th>" : ""}<th>${monthLabelText}</th><th>风险事件</th><th>风险等级</th><th>操作</th></tr></thead><tbody>${resultRows(pageRows, type, includeListId, includeBank)}</tbody></table></div>${paginationMarkup(filtered.length, page, pageKey)}</div>`;
+  const resultFilters = type === "postloan" ? `<select class="select-input${bankFilterClass}" id="postBankFilter"><option value="all">全部银行机构</option>${[...new Set(state.listRecords.map(item => item.bankName))].map(bank => `<option value="${escapeHTML(bank)}" ${state.postBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><select class="select-input list-filter-input" id="postListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.postListQuery === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select>` : type === "preloan" && showScopeFilters ? `<select class="select-input${bankFilterClass}" id="preloanResultBankFilter"><option value="all">全部银行机构</option>${resultBankOptions.map(bank => `<option value="${escapeHTML(bank)}" ${state.preloanResultBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><select class="select-input list-filter-input" id="preloanListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.preloanListFilter === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select>` : "";
+  return `<div class="panel result-panel"><div class="panel-header"><div><h3>${title}</h3><p>${description}</p></div><div class="result-toolbar"><input class="search-input" id="resultSearch" type="search" placeholder="搜索企业名称或代码" value="${escapeHTML(state.query)}"/>${riskFilter}${resultFilters}<button class="button ghost" id="exportAll">↓ 导出结果</button></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>企业名称 / 组织机构代码</th>${includeListId ? "<th>名单编号</th>" : ""}${includeBank ? "<th>银行机构</th>" : ""}<th>${monthLabelText}</th><th>风险等级</th><th>风险事件</th><th>操作</th></tr></thead><tbody>${resultRows(pageRows, type, includeListId, includeBank)}</tbody></table></div>${paginationMarkup(filtered.length, page, pageKey)}</div>`;
 }
 
 function bindResultEvents(results, type) {
   const search = document.querySelector("#resultSearch");
   const filter = document.querySelector("#riskFilter");
   const pageKey = `${type}Page`;
-  search.addEventListener("input", event => { state.query = event.target.value; state[pageKey] = 1; renderCurrentView(); });
-  filter.addEventListener("change", event => { state.selectedRisk = event.target.value; state[pageKey] = 1; renderCurrentView(); });
+  if (search) search.addEventListener("input", event => { state.query = event.target.value; state[pageKey] = 1; renderCurrentView(); });
+  if (filter) filter.addEventListener("change", event => { state.selectedRisk = event.target.value; state[pageKey] = 1; renderCurrentView(); });
   if (type === "postloan") {
-    document.querySelector("#postBankFilter").addEventListener("change", event => { state.postBankFilter = event.target.value; state.postloanPage = 1; renderCurrentView(); });
-    document.querySelector("#postListFilter").addEventListener("change", event => { state.postListQuery = event.target.value; state.postloanPage = 1; renderCurrentView(); });
+    const postBankFilter = document.querySelector("#postBankFilter");
+    const postListFilter = document.querySelector("#postListFilter");
+    if (postBankFilter) postBankFilter.addEventListener("change", event => { state.postBankFilter = event.target.value; state.postloanPage = 1; renderCurrentView(); });
+    if (postListFilter) postListFilter.addEventListener("change", event => { state.postListQuery = event.target.value; state.postloanPage = 1; renderCurrentView(); });
   }
   if (type === "preloan") {
-    document.querySelector("#preloanResultBankFilter").addEventListener("change", event => { state.preloanResultBankFilter = event.target.value; state.preloanPage = 1; renderCurrentView(); });
-    document.querySelector("#preloanListFilter").addEventListener("change", event => { state.preloanListFilter = event.target.value; state.preloanPage = 1; renderCurrentView(); });
+    const preloanBankFilter = document.querySelector("#preloanResultBankFilter");
+    const preloanListFilter = document.querySelector("#preloanListFilter");
+    if (preloanBankFilter) preloanBankFilter.addEventListener("change", event => { state.preloanResultBankFilter = event.target.value; state.preloanPage = 1; renderCurrentView(); });
+    if (preloanListFilter) preloanListFilter.addEventListener("change", event => { state.preloanListFilter = event.target.value; state.preloanPage = 1; renderCurrentView(); });
   }
-  document.querySelector("#exportAll").addEventListener("click", () => exportResults(filteredResults(results, type), "风险监测结果", true));
+  const exportAllButton = document.querySelector("#exportAll");
+  if (exportAllButton) exportAllButton.addEventListener("click", () => exportResults(filteredResults(results, type), "风险监测结果", true));
   document.querySelectorAll("[data-page-key]").forEach(button => button.addEventListener("click", () => {
     if (button.disabled) return;
     state[button.dataset.pageKey] = Number(button.dataset.page);
@@ -852,6 +975,56 @@ function renderAnomalyAlerts() {
   document.querySelector("#anomalyPreviousLevelFilter").addEventListener("change", event => { state.anomalyPreviousLevelFilter = event.target.value; state.anomalyPage = 1; renderAnomalyAlerts(); });
   document.querySelectorAll("[data-page-key='anomalyPage']").forEach(button => button.addEventListener("click", () => { if (!button.disabled) { state.anomalyPage = Number(button.dataset.page); renderAnomalyAlerts(); } }));
   updateRiskChangeNotification();
+}
+
+function quotaDeltaMarkup(delta) {
+  const amount = Number(delta);
+  return `<span class="quota-delta ${amount >= 0 ? "positive" : "negative"}">${amount >= 0 ? "+" : "−"}${Math.abs(amount).toLocaleString()} 币</span>`;
+}
+
+function quotaTransactionRows(records) {
+  if (!records.length) return `<tr><td colspan="6"><div class="empty-state">暂无额度操作记录</div></td></tr>`;
+  return records.map(record => {
+    const account = getPermissionRecord(record.account)?.account || record.account;
+    return `<tr><td><span class="table-list-id quota-account">${escapeHTML(account)}</span></td><td><span class="quota-operation-type ${record.delta >= 0 ? "recharge" : "consume"}">${escapeHTML(record.type)}</span></td><td>${quotaDeltaMarkup(record.delta)}</td><td><strong>${formatQuotaValue(record.balance)} 币</strong></td><td class="muted-text">${escapeHTML(record.time)}</td><td><span class="quota-description">${escapeHTML(record.description)}</span><small class="quota-operator">操作人：${escapeHTML(record.operator || "—")}</small></td></tr>`;
+  }).join("");
+}
+
+function renderQuota() {
+  const view = document.querySelector("#quotaView");
+  const currentKey = quotaAccountKey();
+  const visibleTransactions = isBankUser() ? state.quotaTransactions.filter(record => record.account === currentKey) : state.quotaTransactions;
+  const currentTransactions = state.quotaTransactions.filter(record => record.account === currentKey);
+  const rechargeTotal = currentTransactions.filter(record => record.delta > 0).reduce((total, record) => total + record.delta, 0);
+  const consumptionTotal = currentTransactions.filter(record => record.delta < 0).reduce((total, record) => total + Math.abs(record.delta), 0);
+  const totalPages = Math.max(1, Math.ceil(visibleTransactions.length / quotaPageSize));
+  const page = Math.min(Math.max(1, state.quotaPage), totalPages);
+  state.quotaPage = page;
+  const pageRows = visibleTransactions.slice((page - 1) * quotaPageSize, page * quotaPageSize);
+  const accountProfile = getPermissionRecord();
+  const activeAccounts = state.permissionAccounts.filter(item => item.status === "有效" && item.permission === "业务操作");
+  const defaultRechargeAccount = activeAccounts.find(item => item.account.toLowerCase() === String(state.quotaRechargeAccount || "").toLowerCase()) || activeAccounts[0];
+  const rechargePanel = isBankUser()
+    ? `<div class="panel quota-recharge-panel quota-readonly-panel"><div class="quota-panel-kicker">充值权限</div><h3>仅查看充值结果</h3><p>银行机构账号不能自行充值，如需增加额度，请联系平台运营人员。</p><div class="quota-readonly-note"><span class="quota-lock-mark">◇</span><span>本账号的充值结果将按操作时间记录在下方明细中</span></div></div>`
+    : canRechargeQuota()
+      ? `<div class="panel quota-recharge-panel"><div class="quota-panel-kicker">运营操作</div><h3>额度充值</h3><p>为有效的业务操作账号增加可用额度。</p><div class="quota-recharge-form"><label><span>充值账号</span><select class="select-input" id="quotaRechargeAccount">${activeAccounts.map(item => `<option value="${escapeHTML(item.account)}" ${defaultRechargeAccount?.account === item.account ? "selected" : ""}>${escapeHTML(item.account)} · ${escapeHTML(item.institution)}</option>`).join("")}</select></label><label><span>充值额度</span><div class="quota-amount-input"><input class="search-input" id="quotaRechargeAmount" type="number" min="1" step="1" placeholder="请输入币数"/><em>币</em></div></label><button class="button teal" id="quotaRechargeButton">确认充值</button></div></div>`
+      : `<div class="panel quota-recharge-panel quota-readonly-panel"><div class="quota-panel-kicker">充值权限</div><h3>额度充值由高权限账号管理</h3><p>当前账号为业务操作账号，可查看额度和消费记录，但不能执行充值操作。</p><div class="quota-readonly-note"><span class="quota-lock-mark">◇</span><span>如需增加额度，请联系最高权限运营账号</span></div></div>`;
+  const pagination = `<div class="result-pagination quota-pagination"><span>共 ${visibleTransactions.length} 条操作记录 · 第 ${page}/${totalPages} 页 · 每页10条</span><div class="page-controls"><button class="page-button" data-quota-page="${page - 1}" ${page === 1 ? "disabled" : ""}>‹</button>${Array.from({ length: totalPages }, (_, index) => index + 1).map(item => `<button class="page-button ${item === page ? "active" : ""}" data-quota-page="${item}">${item}</button>`).join("")}<button class="page-button" data-quota-page="${page + 1}" ${page === totalPages ? "disabled" : ""}>›</button></div></div>`;
+  view.innerHTML = `<div class="page-heading quota-heading"><div><div class="eyebrow">Account quota ledger</div><h1>额度管理</h1><p>查看本账号额度、充值结果与贷前筛查消费明细，所有额度变动均按操作时间倒序记录。</p></div><div class="quota-account-chip"><span>${escapeHTML(accountProfile?.institution || state.currentInstitution)}</span><strong>${escapeHTML(state.currentAccount)}</strong></div></div><div class="quota-summary-grid"><div class="quota-balance-card"><div class="quota-card-label">本账号总额度</div><strong>${formatQuotaValue(quotaBalance())}<small>币</small></strong><span>${hasUnlimitedQuota() ? "最高权限账号，不设额度上限" : "当前可用额度"}</span></div><div class="quota-summary-card"><span>累计充值</span><strong>${hasUnlimitedQuota() ? "不限" : rechargeTotal.toLocaleString()}<small>币</small></strong><em>${hasUnlimitedQuota() ? "最高权限账号不设充值上限" : "包含平台充值结果"}</em></div><div class="quota-summary-card"><span>累计消费</span><strong>${consumptionTotal.toLocaleString()}<small>币</small></strong><em>贷前筛查首次查询扣费</em></div></div>${rechargePanel}<div class="panel quota-ledger-panel"><div class="panel-header"><div><h3>充值与消费记录</h3><p>${isBankUser() ? "仅展示本机构账号的充值结果与额度消费" : "展示平台账号及所管理账号的充值、消费变动"}</p></div><span class="muted-text">单位：币</span></div><div class="table-wrap"><table class="data-table quota-table"><thead><tr><th>相关账户</th><th>操作类型</th><th>额度变动</th><th>操作后余额</th><th>操作时间</th><th>操作说明</th></tr></thead><tbody>${quotaTransactionRows(pageRows)}</tbody></table></div>${pagination}</div>`;
+  if (canRechargeQuota()) {
+    document.querySelector("#quotaRechargeAccount").addEventListener("change", event => { state.quotaRechargeAccount = event.target.value; });
+    document.querySelector("#quotaRechargeButton").addEventListener("click", () => {
+      const account = document.querySelector("#quotaRechargeAccount").value;
+      const amount = document.querySelector("#quotaRechargeAmount").value;
+      if (rechargeQuota(account, amount)) {
+        state.quotaRechargeAccount = account;
+        state.quotaPage = 1;
+        renderQuota();
+        showToast(`已为${account}充值 ${Number(amount).toLocaleString()} 币`);
+      }
+    });
+  }
+  document.querySelectorAll("[data-quota-page]").forEach(button => button.addEventListener("click", () => { if (!button.disabled) { state.quotaPage = Number(button.dataset.quotaPage); renderQuota(); } }));
 }
 
 function downloadList(listId) {
@@ -1199,7 +1372,7 @@ function deletePermissionAccount(account) {
   showToast(`${account} 已删除`);
 }
 
-function addPreloanHistory(listId, bankName, results, queryDate = new Date()) {
+function addPreloanHistory(listId, bankName, results, queryDate = new Date(), queried = true) {
   state.preloanHistory.unshift({
     listId,
     bankName,
@@ -1207,9 +1380,69 @@ function addPreloanHistory(listId, bankName, results, queryDate = new Date()) {
     queryAt: formatDateTime(queryDate),
     dateKey: `${queryDate.getFullYear()}-${pad(queryDate.getMonth() + 1)}-${pad(queryDate.getDate())}`,
     timestamp: queryDate.getTime(),
+    queried,
+    charged: false,
     results: results.map(row => ({ ...row, listId, bankName }))
   });
   prunePreloanHistory(queryDate);
+}
+
+function currentPreloanListRecords() {
+  const month = currentMonthKey();
+  return state.preloanHistory
+    .filter(record => monthKeyFromDateKey(record.dateKey) === month && belongsToCurrentBank(record.bankName))
+    .sort((a, b) => b.timestamp - a.timestamp);
+}
+
+function preloanListRows(records, includeBank) {
+  if (!records.length) {
+    return `<tr><td colspan="${includeBank ? 4 : 3}"><div class="empty-state">本月暂未导入企业名单</div></td></tr>`;
+  }
+  return records.map(record => `<tr>
+    <td><span class="list-id table-list-id">${escapeHTML(record.listId)}</span></td>
+    <td><strong>${record.companyCount.toLocaleString()} 家</strong></td>
+    ${includeBank ? `<td>${escapeHTML(record.bankName)}</td>` : ""}
+    <td><div class="row-actions"><button class="text-button" data-preloan-query="${escapeHTML(record.listId)}">查询</button><button class="text-button" data-preloan-list-download="${escapeHTML(record.listId)}">下载</button><button class="text-button danger-text" data-preloan-list-delete="${escapeHTML(record.listId)}">删除</button></div></td>
+  </tr>`).join("");
+}
+
+function queryPreloanList(listId) {
+  const record = state.preloanHistory.find(item => item.listId === listId && belongsToCurrentBank(item.bankName));
+  if (!record) return;
+  if (record.charged !== true && !consumeQuota(state.currentAccount, preloanQueryCharge, `贷前筛查名单 ${listId}`)) return;
+  record.charged = true;
+  record.queried = true;
+  state.preloanSelectedListId = listId;
+  state.preloanResults = record.results;
+  state.preloanPage = 1;
+  state.preloanListFilter = "all";
+  state.preloanResultBankFilter = "all";
+  state.query = "";
+  state.selectedRisk = "all";
+  recordLog("查询结果", listId, record.bankName);
+  renderPreloan();
+  showToast(`已加载 ${listId} 的 ${record.companyCount} 家企业查询结果`);
+}
+
+function deletePreloanList(listId) {
+  const record = state.preloanHistory.find(item => item.listId === listId && belongsToCurrentBank(item.bankName));
+  if (!record || !window.confirm(`确认删除名单“${listId}”吗？删除后将不再显示该名单及其历史查询记录。`)) return;
+  state.preloanHistory = state.preloanHistory.filter(item => item.listId !== listId);
+  if (state.preloanSelectedListId === listId) state.preloanSelectedListId = null;
+  recordLog("删除名单", listId, record.bankName);
+  renderPreloan();
+  showToast(`已删除名单 ${listId}`);
+}
+
+function renderPreloanListPanel(records, includeBank) {
+  const bankHeader = includeBank ? "<th>银行机构</th>" : "";
+  return `<div class="preloan-list-box"><div class="preloan-list-header"><div><h3>当前月度导入名单</h3><p>本月已导入 ${records.length} 份名单 · 按导入时间倒序排列</p></div><span class="preloan-list-period">${monthLabel(currentMonthKey())}</span></div><div class="table-wrap preloan-list-table-wrap"><table class="data-table preloan-list-table"><thead><tr><th>名单编号</th><th>企业数量</th>${bankHeader}<th>操作</th></tr></thead><tbody>${preloanListRows(records, includeBank)}</tbody></table></div></div>`;
+}
+
+function bindPreloanListEvents() {
+  document.querySelectorAll("[data-preloan-query]").forEach(button => button.addEventListener("click", () => queryPreloanList(button.dataset.preloanQuery)));
+  document.querySelectorAll("[data-preloan-list-download]").forEach(button => button.addEventListener("click", () => downloadPreloanHistory(button.dataset.preloanListDownload)));
+  document.querySelectorAll("[data-preloan-list-delete]").forEach(button => button.addEventListener("click", () => deletePreloanList(button.dataset.preloanListDelete)));
 }
 
 function prunePreloanHistory(now = new Date()) {
@@ -1221,6 +1454,7 @@ function prunePreloanHistory(now = new Date()) {
 function filteredPreloanHistory() {
   prunePreloanHistory();
   return state.preloanHistory.filter(record => {
+    if (record.queried === false) return false;
     const bankScopeMatched = belongsToCurrentBank(record.bankName);
     const bankMatched = state.preloanHistoryBankFilter === "all" || record.bankName === state.preloanHistoryBankFilter;
     const listMatched = state.preloanHistoryListQuery === "all" || !state.preloanHistoryListQuery || record.listId === state.preloanHistoryListQuery;
@@ -1264,8 +1498,9 @@ function renderPreloanHistory() {
   const page = Math.min(Math.max(1, state.preloanHistoryPage), totalPages);
   state.preloanHistoryPage = page;
   const pageRows = filtered.slice((page - 1) * preloanHistoryPageSize, page * preloanHistoryPageSize);
-  const bankOptions = [...new Set(state.preloanHistory.map(item => item.bankName))];
-  const listOptions = [...new Set(state.preloanHistory.map(item => item.listId).filter(Boolean))];
+  const historyRecords = state.preloanHistory.filter(item => item.queried !== false);
+  const bankOptions = [...new Set(historyRecords.map(item => item.bankName))];
+  const listOptions = [...new Set(historyRecords.map(item => item.listId).filter(Boolean))];
   return `<div class="panel preloan-history-panel"><div class="panel-header"><div><h3>历史查询</h3><p>仅保留最近六个月的贷前查询记录，按查询时间倒序排列</p></div><div class="preloan-history-filters"><select class="select-input" id="preloanHistoryBankFilter"><option value="all">全部银行机构</option>${bankOptions.map(bank => `<option value="${escapeHTML(bank)}" ${state.preloanHistoryBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><select class="select-input list-filter-input" id="preloanHistoryListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.preloanHistoryListQuery === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select><label class="date-filter"><span>从</span><input class="date-input" id="preloanHistoryStartDate" type="date" value="${escapeHTML(state.preloanHistoryStartDate)}" /></label><label class="date-filter"><span>至</span><input class="date-input" id="preloanHistoryEndDate" type="date" value="${escapeHTML(state.preloanHistoryEndDate)}" /></label></div></div><div class="table-wrap"><table class="data-table preloan-history-table"><thead><tr><th>名单编号</th><th>企业数量</th><th>银行机构</th><th>风险分布</th><th>查询时间</th><th>操作</th></tr></thead><tbody>${preloanHistoryRows(pageRows)}</tbody></table></div>${historyPaginationMarkup(filtered.length, page)}</div>`;
 }
 
@@ -1282,11 +1517,16 @@ function bindPreloanHistoryEvents() {
 function renderPreloan() {
   const view = document.querySelector("#preloanView");
   if (isBankUser()) state.preloanBank = currentBankInstitution();
-  const currentResults = currentPreloanResults();
-  state.preloanResults = currentResults;
-  view.innerHTML = `<div class="page-heading"><div><div class="eyebrow">On-demand screening</div><h1>贷前筛查</h1><p>导入企业名单，单次调用后台数据并即时获取风险识别结果；每次查询自动生成唯一名单编号。</p></div><button class="button ghost" id="downloadTemplate">↓ 下载名单模板</button></div>
-    <div class="panel subpage-panel upload-panel"><div class="upload-box"><div class="upload-icon">⇧</div><h3>导入企业名单</h3><p>仅需“企业名称”和“9位组织机构代码”，支持 CSV 文件</p><div class="upload-actions"><select class="select-input" id="preloanBankSelect">${importBankOptions(state.preloanBank)}</select><label class="button primary" for="preloanFile">选择文件</label><input id="preloanFile" type="file" accept=".csv,.txt"/><button class="button teal" id="demoPreloan">使用演示名单</button></div></div><div class="info-box"><h3>筛查说明</h3><div class="info-list"><div><span>查询方式</span><strong>单次导入 · 即时返回</strong></div><div><span>数据范围</span><strong>后台最新可用监测月份</strong></div><div><span>结果形式</span><strong>一家企业一行</strong></div><div><span>风险输出</span><strong>风险事件 · 风险等级</strong></div></div></div></div>
-    ${resultTable(currentResults, "preloan", "当前月度查询结果", `本月已查询 ${currentResults.length} 家企业 · 按企业名称升序 · 每页展示 ${pageSize} 家`, true)}
+  const currentLists = currentPreloanListRecords();
+  const selectedRecord = currentLists.find(record => record.listId === state.preloanSelectedListId) || null;
+  if (!selectedRecord && state.preloanSelectedListId) state.preloanSelectedListId = null;
+  const includeBank = !isBankUser();
+  const queryPanel = selectedRecord
+    ? resultTable(selectedRecord.results, "preloan", "查询结果", `名单编号 ${selectedRecord.listId} · ${selectedRecord.companyCount} 家企业 · 按企业名称升序 · 每页展示 ${pageSize} 家`, true, false)
+    : `<div class="panel result-panel preloan-query-empty"><div class="panel-header"><div><h3>查询结果</h3><p>请选择上方名单的“查询”，查看该名单的企业风险结果</p></div></div><div class="empty-state">当前未选择查询名单，请先在“当前月度导入名单”中点击“查询”</div></div>`;
+  view.innerHTML = `<div class="page-heading"><div><div class="eyebrow">On-demand screening</div><h1 class="page-title-with-help">贷前筛查<span class="help-trigger" tabindex="0" aria-label="查看筛查说明">?</span><span class="help-tooltip" role="tooltip"><strong>筛查说明</strong><span>查询方式：单次导入 · 即时返回</span><span>数据范围：后台最新可用监测月份</span><span>结果形式：一家企业一行，可批量导出</span><span>风险输出：风险等级、风险事件</span></span></h1><p>导入企业名单，单次调用后台数据并即时获取风险识别结果；每次查询自动生成唯一名单编号。</p></div><button class="button ghost" id="downloadTemplate">↓ 下载名单模板</button></div>
+    <div class="panel subpage-panel upload-panel"><div class="upload-box"><div class="upload-icon">⇧</div><h3>导入企业名单</h3><p>仅需“企业名称”和“9位组织机构代码”，支持 CSV 文件</p><div class="upload-actions"><select class="select-input" id="preloanBankSelect">${importBankOptions(state.preloanBank)}</select><label class="button primary" for="preloanFile">选择文件</label><input id="preloanFile" type="file" accept=".csv,.txt"/><button class="button teal" id="demoPreloan">使用演示名单</button></div></div>${renderPreloanListPanel(currentLists, includeBank)}</div>
+    ${queryPanel}
     ${renderPreloanHistory()}`;
   document.querySelector("#downloadTemplate").addEventListener("click", () => downloadText("企业名称,组织机构代码\n示例企业有限公司,123456789\n", "贷前筛查名单模板.csv"));
   document.querySelector("#demoPreloan").insertAdjacentElement("afterend", document.querySelector("#downloadTemplate"));
@@ -1309,13 +1549,15 @@ function renderPreloan() {
     state.preloanResultBankFilter = "all";
     state.query = "";
     state.selectedRisk = "all";
-    addPreloanHistory(listId, state.preloanBank, state.preloanResults, queryDate);
+    state.preloanSelectedListId = null;
+    addPreloanHistory(listId, state.preloanBank, state.preloanResults, queryDate, false);
     recordLog("导入名单", listId, state.preloanBank);
     renderPreloan();
-    showToast(`名单筛查完成，已生成 ${listId}，返回 ${state.preloanResults.length} 家企业结果`);
+    showToast(`名单导入成功，已生成 ${listId}，请点击“查询”查看结果`);
   });
   document.querySelector("#preloanFile").addEventListener("change", handleFileUpload);
-  bindResultEvents(currentResults, "preloan");
+  if (selectedRecord) bindResultEvents(selectedRecord.results, "preloan");
+  bindPreloanListEvents();
   bindPreloanHistoryEvents();
 }
 
@@ -1335,8 +1577,7 @@ function renderPostloan() {
   const visibleBatches = state.batches.filter(batch => belongsToCurrentBank(batch.bankName));
   const batchListOptions = [...new Set(visibleBatches.map(batch => batch.listId).filter(Boolean))];
   const batchBankOptions = [...new Set(visibleBatches.map(batch => batch.bankName).filter(Boolean))];
-  view.innerHTML = `<div class="page-heading"><div><div class="eyebrow">Monthly monitoring</div><h1>贷中监控</h1><p>平台按月度周期自动跑批：每月1日运行状态为“有效”且处于监测时间范围内的名单，中止或终止状态名单不参与当月监测。</p></div></div>
-    <div class="monitor-banner"><div class="monitor-step"><div class="step-num">1</div><div><strong>名单确认</strong><span>当前监测名单企业 ${currentResults.length} 家</span></div></div><div class="monitor-step"><div class="step-num">2</div><div><strong>每月1日自动跑批</strong><span>按名单状态与起止时间执行</span></div></div><div class="monitor-step wait"><div class="step-num">3</div><div><strong>结果发布</strong><span>自动发布，支持导出与AI解读</span></div></div></div>
+  view.innerHTML = `<div class="page-heading"><div><div class="eyebrow">Monthly monitoring</div><h1 class="page-title-with-help">贷中监控<span class="help-trigger" tabindex="0" aria-label="查看监控说明">?</span><span class="help-tooltip" role="tooltip"><strong>监控说明</strong><span>监控方式：导入名单后，每月1号自动跑批，结果显示在本页面</span><span>管理方式：在左侧“名单管理”板块中，导入并管理企业名单</span><span>结果形式：一家企业一行，可批量导出</span><span>风险输出：风险等级、风险事件</span></span></h1><p>平台按月度周期自动跑批：每月1日运行状态为“有效”且处于监测时间范围内的名单，中止或终止状态名单不参与当月监测。</p></div></div>
     ${resultTable(currentResults, "postloan", "当前月度监测结果", `最新已完成月度跑批 · ${currentResults.length} 家企业 · 按企业名称升序`, true)}
     <div class="panel monitor-table"><div class="panel-header"><div><h3>历史监控批次</h3><p>按银行机构、名单编号和监测时间范围查看已发布的监测结果</p></div><div class="batch-filter-toolbar"><select class="select-input" id="batchBankFilter"><option value="all">全部银行机构</option>${batchBankOptions.map(bank => `<option value="${escapeHTML(bank)}" ${state.batchBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><select class="select-input" id="batchListFilter"><option value="all">全部名单编号</option>${batchListOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.batchListFilter === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select><label class="date-filter"><span>从</span><input class="date-input" id="batchStartDate" type="date" value="${escapeHTML(state.batchStartDate)}" /></label><label class="date-filter"><span>到</span><input class="date-input" id="batchEndDate" type="date" value="${escapeHTML(state.batchEndDate)}" /></label><span class="muted-text">共 ${filteredBatches.length} 个批次</span></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>监测月份</th><th>名单编号</th><th>企业数量</th><th>银行机构</th><th>监测区间</th><th>风险分布</th><th>状态</th><th>完成时间</th><th>操作</th></tr></thead><tbody>${filteredBatches.length ? filteredBatches.map(batch => `<tr><td><strong>${batch.month}</strong></td><td><span class="list-id table-list-id">${escapeHTML(batch.listId || "—")}</span></td><td>${batch.total.toLocaleString()} 家</td><td>${escapeHTML(batch.bankName || "—")}</td><td class="muted-text">${batch.range}</td><td><span class="risk-badge high">${batch.high}</span><span class="risk-badge medium" style="margin-left:5px">${batch.medium}</span><span class="risk-badge low" style="margin-left:5px">${batch.low}</span><span class="risk-badge none" style="margin-left:5px">${batch.none}</span></td><td><span class="status-badge complete">${batch.status}</span></td><td class="muted-text">${batch.time}</td><td><button class="text-button" data-batch-export="${batch.month}">导出</button></td></tr>`).join("") : `<tr><td colspan="9"><div class="empty-state">没有符合条件的历史监控批次</div></td></tr>`}</tbody></table></div></div>`;
   if (isBankUser()) document.querySelector("#batchBankFilter").classList.add("hidden-app");
@@ -1417,10 +1658,11 @@ function handleFileUpload(event) {
     state.preloanResultBankFilter = "all";
     state.query = "";
     state.selectedRisk = "all";
-    addPreloanHistory(listId, state.preloanBank, state.preloanResults, queryDate);
+    state.preloanSelectedListId = null;
+    addPreloanHistory(listId, state.preloanBank, state.preloanResults, queryDate, false);
     recordLog("导入名单", listId, state.preloanBank);
     renderPreloan();
-    showToast(`已完成名单校验，共识别 ${rows.length} 家企业，名单编号 ${listId}`);
+    showToast(`名单导入成功，共识别 ${rows.length} 家企业，名单编号 ${listId}，请点击“查询”查看结果`);
   };
   reader.readAsText(file, "UTF-8");
 }
@@ -1434,7 +1676,7 @@ function updatePermissionNavVisibility() {
   document.querySelector("#permissionsNav").classList.toggle("hidden-app", isBankUser || !state.hasPermissionAdmin);
 }
 
-function renderCurrentView() { if (state.currentView === "dashboard") renderDashboard(); if (state.currentView === "preloan") renderPreloan(); if (state.currentView === "postloan") renderPostloan(); if (state.currentView === "listManagement") renderListManagement(); if (state.currentView === "anomalyAlerts") renderAnomalyAlerts(); if (state.currentView === "logs") renderLogs(); if (state.currentView === "permissions") renderPermissions(); }
+function renderCurrentView() { if (state.currentView === "dashboard") renderDashboard(); if (state.currentView === "preloan") renderPreloan(); if (state.currentView === "postloan") renderPostloan(); if (state.currentView === "listManagement") renderListManagement(); if (state.currentView === "anomalyAlerts") renderAnomalyAlerts(); if (state.currentView === "logs") renderLogs(); if (state.currentView === "permissions") renderPermissions(); if (state.currentView === "quota") renderQuota(); }
 
 function switchView(view) {
   if (view === "permissions" && !state.hasPermissionAdmin) { showToast("当前账号暂无权限访问权限管理"); return; }
@@ -1444,7 +1686,7 @@ function switchView(view) {
   document.querySelectorAll(".nav-subitem").forEach(item => item.classList.toggle("active", item.dataset.view === view));
   document.querySelectorAll(".view").forEach(section => section.classList.remove("active-view"));
   document.querySelector(`#${view}View`).classList.add("active-view");
-  document.querySelector("#breadcrumbTitle").textContent = { dashboard: "总览", preloan: "贷前筛查", postloan: "贷中监控", listManagement: "名单管理", anomalyAlerts: "异常提示", logs: "日志管理", permissions: "权限管理" }[view];
+  document.querySelector("#breadcrumbTitle").textContent = { dashboard: "总览", preloan: "贷前筛查", postloan: "贷中监控", listManagement: "名单管理", anomalyAlerts: "异常提示", logs: "日志管理", permissions: "权限管理", quota: "额度管理" }[view];
   renderCurrentView();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1632,6 +1874,8 @@ function enterPlatform() {
 }
 
 document.querySelector("#loginButton").addEventListener("click", enterPlatform);
+updateLiveDataTimestamp();
+window.setInterval(updateLiveDataTimestamp, 1000);
 document.querySelectorAll("#loginAccount, #loginPassword").forEach(input => input.addEventListener("keydown", event => {
   if (event.key === "Enter") { event.preventDefault(); enterPlatform(); }
 }));
@@ -1654,6 +1898,10 @@ document.querySelector("#riskChangeNotification").addEventListener("click", even
   const wrap = document.querySelector("#notificationWrap");
   const isOpen = wrap.classList.toggle("open");
   event.currentTarget.setAttribute("aria-expanded", String(isOpen));
+});
+const quotaManagementButton = document.querySelector("#quotaManagementButton");
+if (quotaManagementButton) quotaManagementButton.addEventListener("click", () => {
+  if (state.currentAccount !== "未登录") switchView("quota");
 });
 document.querySelector("#riskChangeNotificationTip").addEventListener("click", event => {
   const item = event.target.closest("[data-notification-id]");

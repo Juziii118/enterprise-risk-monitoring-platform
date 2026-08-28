@@ -68,7 +68,7 @@
           <span class="status-dot"></span>
           <div>
             <div class="status-title">数据服务正常</div>
-            <div class="status-meta">最近更新：2026-08-25 08:30</div>
+            <div id="lastUpdated" class="status-meta"><span class="status-meta-label">最近更新时间：</span><span id="lastUpdatedValue" class="status-timestamp">加载中</span></div>
           </div>
         </div>
         <div class="user-card">
@@ -93,6 +93,7 @@
             <button id="riskChangeNotification" class="icon-button notification-button" type="button" title="暂无消息提示" aria-label="暂无消息提示" aria-expanded="false" aria-controls="riskChangeNotificationTip"><span id="riskChangeNotificationDot" class="notification-dot hidden-app"></span>♢</button>
             <div id="riskChangeNotificationTip" class="notification-popover" role="status"><div class="notification-empty">暂无消息提示</div></div>
           </div>
+          <button id="quotaManagementButton" class="icon-button quota-button" type="button" title="额度管理" aria-label="额度管理">￥</button>
           <div class="topbar-user-wrap">
             <button id="topbarUser" class="topbar-user" aria-expanded="false"><span class="avatar small">无</span><span id="topbarUserName">未登录</span><span class="chevron">⌄</span></button>
             <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="renameUserButton" type="button">修改名称</button></div>
@@ -107,6 +108,7 @@
       <section id="anomalyAlertsView" class="view"></section>
       <section id="logsView" class="view"></section>
       <section id="permissionsView" class="view"></section>
+      <section id="quotaView" class="view"></section>
     </main>
   </div>
 
