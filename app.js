@@ -121,6 +121,66 @@ function formatDate(date) {
   return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())}`;
 }
 
+function formatInputDate(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function parseAccountDate(value, endOfDay = false) {
+  const parts = String(value || "").split("-").map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+  return new Date(parts[0], parts[1] - 1, parts[2], endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0);
+}
+
+function accountValidityStatus(record, now = new Date()) {
+  const start = parseAccountDate(record?.startDate);
+  const end = parseAccountDate(record?.endDate, true);
+  if (start && now < start) return "无效";
+  if (end && now > end) return "无效";
+  return "有效";
+}
+
+function accountValidityNoticeStorageKey(account = state.currentAccount) {
+  return `riskMonitorAccountValidityNotice:${String(account || "").toLowerCase()}`;
+}
+
+function accountDateOnly(date = new Date()) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function accountValidityNoticeState(record, now = new Date()) {
+  if (!record?.endDate) return null;
+  const endDate = parseAccountDate(record.endDate);
+  const status = accountValidityStatus(record, now);
+  if (status === "无效" && endDate && now > parseAccountDate(record.endDate, true)) {
+    return { type: "expired", message: "您的账户已过期，如需恢复使用请联系管理员。" };
+  }
+  if (status !== "有效" || !endDate) return null;
+  const daysRemaining = Math.floor((endDate.getTime() - accountDateOnly(now).getTime()) / 86400000);
+  if (daysRemaining >= 0 && daysRemaining <= 15) {
+    return { type: "warning", message: `您的账户还有${daysRemaining}天过期。`, daysRemaining };
+  }
+  return null;
+}
+
+function showAccountValidityNotice() {
+  const record = getPermissionRecord();
+  const notice = accountValidityNoticeState(record);
+  if (!notice) return;
+  const today = formatInputDate(new Date());
+  if (localStorage.getItem(accountValidityNoticeStorageKey()) === today) return;
+  localStorage.setItem(accountValidityNoticeStorageKey(), today);
+  const modal = document.querySelector("#accountValidityModal");
+  const body = document.querySelector("#accountValidityModalBody");
+  if (!modal || !body) return;
+  modal.classList.toggle("expired", notice.type === "expired");
+  body.innerHTML = `<div class="account-validity-message ${notice.type === "expired" ? "expired" : ""}"><span class="account-validity-icon">${notice.type === "expired" ? "!" : "⌛"}</span><span>${escapeHTML(notice.message)}</span></div>`;
+  modal.classList.remove("hidden");
+}
+
+function closeAccountValidityModal() {
+  document.querySelector("#accountValidityModal")?.classList.add("hidden");
+}
+
 function updateLiveDataTimestamp() {
   const now = new Date();
   const timestamp = document.querySelector("#lastUpdatedValue");
@@ -321,6 +381,7 @@ const demoAccounts = {
   "ccc@jsbank.com": { password: "Password1234", role: "bank", permissionAdmin: false, enabled: true },
   "bbb@jjbank.com": { password: "Password1234", role: "bank", permissionAdmin: false, enabled: true }
 };
+refreshAccountValidity();
 const accountFormats = [
   { role: "operator", pattern: /^[^@\s]+@jxphzx\.com$/i },
   { role: "bank", pattern: /^[^@\s]+@[^@\s]+bank\.com$/i }
@@ -444,12 +505,12 @@ function belongsToCurrentBank(bankName) {
 
 function buildPermissionAccounts() {
   return [
-    { account: "001@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "最高权限", status: "有效", createdAt: "2026/08/01", builtin: true },
-    { account: "002@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "最高权限", status: "有效", createdAt: "2026/08/12", builtin: false },
-    { account: "003@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "业务操作", status: "有效", createdAt: "2026/08/15", builtin: false },
-    { account: "AAA@jsbank.com", type: "银行机构用户", institution: "江西银行", permission: "业务操作", status: "有效", createdAt: "2026/08/18", builtin: false },
-    { account: "CCC@jsbank.com", type: "银行机构用户", institution: "江西银行", permission: "业务操作", status: "有效", createdAt: "2026/08/22", builtin: false },
-    { account: "BBB@jjbank.com", type: "银行机构用户", institution: "九江银行", permission: "业务操作", status: "有效", createdAt: "2026/08/20", builtin: false }
+    { account: "001@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "最高权限", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/01", builtin: true },
+    { account: "002@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "最高权限", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/12", builtin: false },
+    { account: "003@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/15", builtin: false },
+    { account: "AAA@jsbank.com", type: "银行机构用户", institution: "江西银行", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/18", builtin: false },
+    { account: "CCC@jsbank.com", type: "银行机构用户", institution: "江西银行", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/22", builtin: false },
+    { account: "BBB@jjbank.com", type: "银行机构用户", institution: "九江银行", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/20", builtin: false }
   ];
 }
 
@@ -458,23 +519,43 @@ function getPermissionRecord(account = state.currentAccount) {
   return state.permissionAccounts.find(item => item.account.toLowerCase() === accountKey) || null;
 }
 
+function refreshAccountValidity() {
+  state.permissionAccounts.forEach(record => {
+    record.status = accountValidityStatus(record);
+    const accountConfig = demoAccounts[record.account.toLowerCase()];
+    if (accountConfig) accountConfig.enabled = record.status === "有效";
+  });
+}
+
+function hasActiveAccountValidity(account = state.currentAccount) {
+  refreshAccountValidity();
+  const record = getPermissionRecord(account);
+  return !record || record.status === "有效";
+}
+
+function requireActiveBusinessAccount() {
+  if (hasActiveAccountValidity()) return true;
+  showToast("当前账号已超出有效期，仅支持下载历史查询结果");
+  return false;
+}
+
 function currentPermissionLevel() {
   return getPermissionRecord()?.permission || (demoAccounts[state.currentAccount]?.permissionAdmin ? "最高权限" : "只读查看");
 }
 
 function canViewPermissionManagement() {
   const config = demoAccounts[state.currentAccount];
-  return config?.role === "operator" && Boolean(getPermissionRecord());
+  return config?.role === "operator" && getPermissionRecord()?.status === "有效";
 }
 
 function canAddPermissionAccount() {
   const record = getPermissionRecord();
-  return Boolean(record && (record.builtin || record.permission === "最高权限" || (record.permission === "业务操作" && record.type === "运营账号")));
+  return Boolean(record && record.status === "有效" && (record.builtin || record.permission === "最高权限" || (record.permission === "业务操作" && record.type === "运营账号")));
 }
 
 function canManagePermissionRecord(target) {
   const current = getPermissionRecord();
-  if (!current || target.account.toLowerCase() === state.currentAccount.toLowerCase() || target.builtin) return false;
+  if (!current || current.status !== "有效" || target.account.toLowerCase() === state.currentAccount.toLowerCase() || target.builtin) return false;
   if (current.builtin) return true;
   return current.permission === "最高权限" && target.permission === "业务操作";
 }
@@ -925,6 +1006,13 @@ function renderListManagement() {
   postloanTemplateButton.textContent = "↓ 下载名单模板";
   postloanTemplateButton.addEventListener("click", () => downloadText("企业名称,组织机构代码\n示例企业有限公司,123456789\n", "贷中监控名单模板.csv"));
   document.querySelector(".list-import-actions").appendChild(postloanTemplateButton);
+  const canOperate = hasActiveAccountValidity();
+  const postloanBankSelect = document.querySelector("#importBankSelect");
+  const postloanFile = document.querySelector("#postloanListFile");
+  const postloanFileLabel = document.querySelector("label[for='postloanListFile']");
+  postloanBankSelect.disabled = !canOperate;
+  postloanFile.disabled = !canOperate;
+  postloanFileLabel.classList.toggle("disabled-action", !canOperate);
   document.querySelector("#listBankFilter").addEventListener("change", event => { state.listBankFilter = event.target.value; state.listPage = 1; renderListManagement(); });
   document.querySelector("#listIdSearch").addEventListener("input", event => { state.listIdQuery = event.target.value; state.listPage = 1; renderListManagement(); });
   document.querySelector("#importBankSelect").addEventListener("change", event => {
@@ -1109,6 +1197,7 @@ function saveInstitution() {
 }
 
 function handleListUpload(event) {
+  if (!requireActiveBusinessAccount()) { event.target.value = ""; return; }
   const file = event.target.files[0];
   const bank = isBankUser() ? currentBankInstitution() : document.querySelector("#importBankSelect").value;
   if (!file) return;
@@ -1238,6 +1327,7 @@ function permissionStatusBadge(status) {
 }
 
 function filteredPermissionAccounts() {
+  refreshAccountValidity();
   return state.permissionAccounts.filter(record => {
     const queryMatched = !state.permissionQuery || `${record.account}${record.institution}${record.permission}`.toLowerCase().includes(state.permissionQuery.toLowerCase());
     const typeMatched = state.permissionTypeFilter === "all" || record.type === state.permissionTypeFilter;
@@ -1266,6 +1356,8 @@ function permissionPaginationMarkup(total, page, size = 10) {
 }
 
 function renderPermissions() {
+  refreshAccountValidity();
+  state.hasPermissionAdmin = canViewPermissionManagement();
   if (!state.hasPermissionAdmin) return switchView("dashboard");
   const view = document.querySelector("#permissionsView");
   const filtered = filteredPermissionAccounts();
@@ -1310,7 +1402,11 @@ function openPermissionModal(account = null) {
   syncPermissionInstitutionOptions(record?.institution || "");
   document.querySelector("#permissionInstitution").disabled = Boolean(record);
   document.querySelector("#permissionLevel").value = record?.permission || "业务操作";
-  document.querySelector("#permissionStatus").value = record?.status || "有效";
+  const defaultStartDate = formatInputDate(new Date());
+  const defaultEndDate = new Date();
+  defaultEndDate.setFullYear(defaultEndDate.getFullYear() + 1);
+  document.querySelector("#permissionStartDate").value = record?.startDate || defaultStartDate;
+  document.querySelector("#permissionEndDate").value = record?.endDate || formatInputDate(defaultEndDate);
   document.querySelector("#permissionModal").classList.remove("hidden");
 }
 
@@ -1326,13 +1422,18 @@ function savePermissionAccount() {
   const type = document.querySelector("#permissionType").value;
   const institution = document.querySelector("#permissionInstitution").value;
   const permission = document.querySelector("#permissionLevel").value;
-  const status = document.querySelector("#permissionStatus").value;
+  const startDate = document.querySelector("#permissionStartDate").value;
+  const endDate = document.querySelector("#permissionEndDate").value;
+  const start = parseAccountDate(startDate);
+  const end = parseAccountDate(endDate, true);
+  if (!startDate || !endDate || !start || !end || start > end) { showToast("请填写有效的账号起止日期，且起始日期不得晚于截止日期"); return; }
+  const status = accountValidityStatus({ startDate, endDate });
   const format = accountFormats.find(item => item.role === type);
   if (!account || !format?.pattern.test(accountKey)) { showToast(type === "operator" ? "运营账号格式应为xxx@jxphzx.com" : "银行机构账号格式应为xxx@XXXbank.com"); return; }
   const duplicate = state.permissionAccounts.some(item => item.account.toLowerCase() === accountKey && item.account.toLowerCase() !== String(state.permissionTargetAccount || "").toLowerCase());
   if (duplicate) { showToast("该登录账户已存在"); return; }
   if (accountKey === state.currentAccount.toLowerCase() && (permission !== "最高权限" || status !== "有效")) { showToast("当前登录管理员不可取消自身最高权限或有效状态"); return; }
-  const nextRecord = { account, type: type === "bank" ? "银行机构用户" : "运营账号", institution, permission, status, createdAt: state.permissionTargetAccount ? state.permissionAccounts.find(item => item.account === state.permissionTargetAccount).createdAt : formatDate(new Date()), builtin: state.permissionTargetAccount ? state.permissionAccounts.find(item => item.account === state.permissionTargetAccount).builtin : false };
+  const nextRecord = { account, type: type === "bank" ? "银行机构用户" : "运营账号", institution, permission, status, startDate, endDate, createdAt: state.permissionTargetAccount ? state.permissionAccounts.find(item => item.account === state.permissionTargetAccount).createdAt : formatDate(new Date()), builtin: state.permissionTargetAccount ? state.permissionAccounts.find(item => item.account === state.permissionTargetAccount).builtin : false };
   const oldAccount = state.permissionTargetAccount;
   const oldRecord = oldAccount ? state.permissionAccounts.find(item => item.account === oldAccount) : null;
   if (oldRecord && !canManagePermissionRecord(oldRecord)) { showToast("当前账号无权修改该账号"); return; }
@@ -1398,15 +1499,17 @@ function preloanListRows(records, includeBank) {
   if (!records.length) {
     return `<tr><td colspan="${includeBank ? 4 : 3}"><div class="empty-state">本月暂未导入企业名单</div></td></tr>`;
   }
+  const canQuery = hasActiveAccountValidity();
   return records.map(record => `<tr>
     <td><span class="list-id table-list-id">${escapeHTML(record.listId)}</span></td>
     <td><strong>${record.companyCount.toLocaleString()} 家</strong></td>
     ${includeBank ? `<td>${escapeHTML(record.bankName)}</td>` : ""}
-    <td><div class="row-actions"><button class="text-button" data-preloan-query="${escapeHTML(record.listId)}">查询</button><button class="text-button" data-preloan-list-download="${escapeHTML(record.listId)}">下载</button><button class="text-button danger-text" data-preloan-list-delete="${escapeHTML(record.listId)}">删除</button></div></td>
+    <td><div class="row-actions"><button class="text-button ${canQuery ? "" : "disabled-action"}" data-preloan-query="${escapeHTML(record.listId)}" ${canQuery ? "" : "disabled title=\"账号已超出有效期\""}>查询</button><button class="text-button" data-preloan-list-download="${escapeHTML(record.listId)}">下载</button><button class="text-button danger-text" data-preloan-list-delete="${escapeHTML(record.listId)}">删除</button></div></td>
   </tr>`).join("");
 }
 
 function queryPreloanList(listId) {
+  if (!requireActiveBusinessAccount()) return;
   const record = state.preloanHistory.find(item => item.listId === listId && belongsToCurrentBank(item.bankName));
   if (!record) return;
   if (record.charged !== true && !consumeQuota(state.currentAccount, preloanQueryCharge, `贷前筛查名单 ${listId}`)) return;
@@ -1528,6 +1631,16 @@ function renderPreloan() {
     <div class="panel subpage-panel upload-panel"><div class="upload-box"><div class="upload-icon">⇧</div><h3>导入企业名单</h3><p>仅需“企业名称”和“9位组织机构代码”，支持 CSV 文件</p><div class="upload-actions"><select class="select-input" id="preloanBankSelect">${importBankOptions(state.preloanBank)}</select><label class="button primary" for="preloanFile">选择文件</label><input id="preloanFile" type="file" accept=".csv,.txt"/><button class="button teal" id="demoPreloan">使用演示名单</button></div></div>${renderPreloanListPanel(currentLists, includeBank)}</div>
     ${queryPanel}
     ${renderPreloanHistory()}`;
+  const canOperate = hasActiveAccountValidity();
+  const preloanBankSelect = document.querySelector("#preloanBankSelect");
+  const preloanFile = document.querySelector("#preloanFile");
+  const preloanFileLabel = document.querySelector("label[for='preloanFile']");
+  const demoPreloan = document.querySelector("#demoPreloan");
+  preloanBankSelect.disabled = !canOperate;
+  preloanFile.disabled = !canOperate;
+  demoPreloan.disabled = !canOperate;
+  preloanFileLabel.classList.toggle("disabled-action", !canOperate);
+  if (!canOperate) demoPreloan.title = "账号已超出有效期，仅支持下载历史查询结果";
   document.querySelector("#downloadTemplate").addEventListener("click", () => downloadText("企业名称,组织机构代码\n示例企业有限公司,123456789\n", "贷前筛查名单模板.csv"));
   document.querySelector("#demoPreloan").insertAdjacentElement("afterend", document.querySelector("#downloadTemplate"));
   document.querySelector("#preloanBankSelect").addEventListener("change", event => {
@@ -1540,6 +1653,7 @@ function renderPreloan() {
   });
   if (isBankUser()) document.querySelector("#preloanBankSelect").classList.add("hidden-app");
   document.querySelector("#demoPreloan").addEventListener("click", () => {
+    if (!requireActiveBusinessAccount()) return;
     if (!state.preloanBank) { showToast("请先选择导入银行"); return; }
     const queryDate = new Date();
     const listId = createPreloanListId(queryDate);
@@ -1644,6 +1758,7 @@ function parseCSV(text) {
 }
 
 function handleFileUpload(event) {
+  if (!requireActiveBusinessAccount()) { event.target.value = ""; return; }
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -1668,6 +1783,7 @@ function handleFileUpload(event) {
 }
 
 function updatePermissionNavVisibility() {
+  refreshAccountValidity();
   const accountConfig = demoAccounts[state.currentAccount];
   const isBankUser = accountConfig?.role === "bank";
   state.hasPermissionAdmin = canViewPermissionManagement();
@@ -1679,7 +1795,8 @@ function updatePermissionNavVisibility() {
 function renderCurrentView() { if (state.currentView === "dashboard") renderDashboard(); if (state.currentView === "preloan") renderPreloan(); if (state.currentView === "postloan") renderPostloan(); if (state.currentView === "listManagement") renderListManagement(); if (state.currentView === "anomalyAlerts") renderAnomalyAlerts(); if (state.currentView === "logs") renderLogs(); if (state.currentView === "permissions") renderPermissions(); if (state.currentView === "quota") renderQuota(); }
 
 function switchView(view) {
-  if (view === "permissions" && !state.hasPermissionAdmin) { showToast("当前账号暂无权限访问权限管理"); return; }
+  refreshAccountValidity();
+  if (view === "permissions" && !canViewPermissionManagement()) { state.hasPermissionAdmin = false; showToast("当前账号暂无权限访问权限管理"); return; }
   state.currentView = view; state.query = ""; state.selectedRisk = "all"; state.preloanListFilter = "all"; state.preloanResultBankFilter = "all"; state.postBankFilter = "all"; state.postListQuery = ""; state.listBankFilter = "all"; state.listIdQuery = ""; state.batchMonthFilter = "all"; state.batchListFilter = "all"; state.batchBankFilter = "all"; state.batchStartDate = ""; state.batchEndDate = ""; state.anomalyPage = 1; state.anomalyBankFilter = "all"; state.anomalyListFilter = "all"; state.anomalyCurrentLevelFilter = "all"; state.anomalyPreviousLevelFilter = "all";
   const parentView = ["listManagement", "anomalyAlerts"].includes(view) ? "postloan" : view;
   document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === parentView));
@@ -1838,13 +1955,10 @@ function enterPlatform() {
     showToast("暂未识别该登录账户格式，请联系平台管理员配置");
     return;
   }
+  refreshAccountValidity();
   const accountConfig = demoAccounts[accountKey];
   if (!accountConfig || accountConfig.password !== password.value) {
     showToast("登录账户或密码不正确");
-    return;
-  }
-  if (accountConfig.enabled === false) {
-    showToast("该账号当前已失效，请联系管理员");
     return;
   }
   if (accountConfig.role !== matchedFormat.role) {
@@ -1861,7 +1975,7 @@ function enterPlatform() {
   state.currentAccount = accountKey;
   state.currentOperator = accountKey;
   state.currentInstitution = profile.institution;
-  state.hasPermissionAdmin = Boolean(accountConfig.permissionAdmin && accountConfig.enabled);
+  state.hasPermissionAdmin = Boolean(accountConfig.permissionAdmin && getPermissionRecord(accountKey)?.status === "有效");
   state.customDisplayName = localStorage.getItem(displayNameStorageKey()) || "";
   document.querySelector("#loginView").classList.add("hidden-app");
   document.querySelector("#appShell").classList.remove("hidden-app");
@@ -1871,6 +1985,7 @@ function enterPlatform() {
   updateRiskChangeNotification();
   recordLog("登录成功", "平台账户", profile.institution);
   showToast(`已以${profile.name}身份进入平台`);
+  showAccountValidityNotice();
 }
 
 document.querySelector("#loginButton").addEventListener("click", enterPlatform);
@@ -1934,6 +2049,8 @@ document.querySelector("#restoreListButton").addEventListener("click", restoreTa
 document.querySelector("#deleteListButton").addEventListener("click", deleteTargetList);
 document.querySelectorAll("[data-close-permission-modal]").forEach(button => button.addEventListener("click", closePermissionModal));
 document.querySelector("#permissionModal").addEventListener("click", event => { if (event.target.id === "permissionModal") closePermissionModal(); });
+document.querySelectorAll("[data-close-account-validity-modal]").forEach(button => button.addEventListener("click", closeAccountValidityModal));
+document.querySelector("#accountValidityModal").addEventListener("click", event => { if (event.target.id === "accountValidityModal") closeAccountValidityModal(); });
 document.querySelector("#permissionType").addEventListener("change", () => syncPermissionInstitutionOptions(state.permissionInstitutionDraft));
 document.querySelector("#permissionInstitution").addEventListener("change", event => {
   if (event.target.value === "__add_institution__") {

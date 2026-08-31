@@ -262,6 +262,7 @@ button { cursor: pointer; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 20px; background: rgba(13, 31, 47, .48); backdrop-filter: blur(2px); }
 .modal-backdrop.hidden { display: none; }
 #institutionModal { z-index: 40; }
+#accountValidityModal { z-index: 50; }
 .modal { width: min(650px, 100%); background: #fff; border-radius: 15px; box-shadow: 0 20px 70px rgba(6, 32, 49, .22); overflow: hidden; }
 .modal-header { display: flex; justify-content: space-between; padding: 24px 25px 18px; border-bottom: 1px solid var(--line); }
 .modal-header h2 { margin: 7px 0 0; font-size: 18px; }
@@ -431,6 +432,14 @@ button, input, select { font-family: inherit; }
 .modal-header { background: linear-gradient(120deg, #fffefb, #f7fbfa); }
 .ai-summary { border: 1px solid #d8ede8; background: linear-gradient(135deg, #f1fbf8, #f8fcfa); }
 .toast { border: 1px solid rgba(177, 231, 220, .18); backdrop-filter: blur(8px); }
+.account-validity-modal { width: min(430px, 100%); }
+.account-validity-modal .modal-header { align-items: flex-start; }
+.account-validity-modal .modal-body { padding: 25px; }
+.account-validity-message { display: flex; align-items: flex-start; gap: 12px; padding: 14px 15px; border: 1px solid #f0d9b7; border-radius: 10px; background: #fff9ef; color: #76532c; font-size: 13px; line-height: 1.8; }
+.account-validity-message.expired { border-color: #f0cfd2; background: #fff4f5; color: #8d444e; }
+.account-validity-icon { flex: 0 0 auto; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #f4d39e; color: #8a5a20; font-size: 14px; font-weight: 700; }
+.account-validity-message.expired .account-validity-icon { background: #f3c8cd; color: #a33e4b; }
+.account-validity-modal.expired .modal-header { background: linear-gradient(120deg, #fff, #fff6f7); }
 .login-view { background: radial-gradient(circle at 16% 16%, rgba(76, 181, 169, .14), transparent 28%), radial-gradient(circle at 86% 82%, rgba(65, 122, 178, .12), transparent 31%), linear-gradient(145deg, #f1f7f6, #f7faf8); }
 .login-card { border-color: #dce9e6; border-radius: 20px; box-shadow: 0 24px 75px rgba(25, 63, 72, .13); }
 .login-card:before { content: ""; position: absolute; left: 38px; right: 38px; top: 0; height: 3px; border-radius: 0 0 6px 6px; background: linear-gradient(90deg, #2b9a92, #6bbdb5, #e89748); }
@@ -482,10 +491,11 @@ button, input, select { font-family: inherit; }
 .permission-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .permission-field { display: grid; gap: 7px; }
 .permission-field span { color: #526575; font-size: 11px; font-weight: 600; }
-.permission-field .search-input, .permission-field .select-input { width: 100%; height: 38px; }
+.permission-field .search-input, .permission-field .select-input, .permission-field .date-input { width: 100%; height: 38px; }
 .permission-field .search-input:disabled { color: #84949e; background: #f4f7f7; cursor: not-allowed; }
 .permission-field .select-input:disabled { color: #84949e; background: #f4f7f7; cursor: not-allowed; opacity: .85; }
 .permission-note { margin-top: 18px; font-size: 11px; line-height: 1.7; }
+.disabled-action { opacity: .45 !important; cursor: not-allowed !important; pointer-events: none; }
 .dashboard-heading { align-items: center; }
 .dashboard-tabs { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid #dce8e6; border-radius: 10px; background: #eef5f3; }
 .dashboard-tab { min-width: 98px; padding: 9px 14px; border: 0; border-radius: 7px; background: transparent; color: #6e828d; font-size: 12px; font-weight: 600; }

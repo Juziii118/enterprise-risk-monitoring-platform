@@ -157,13 +157,31 @@
           <label class="permission-field"><span>账号类型</span><select id="permissionType" class="select-input"><option value="operator">运营账号</option><option value="bank">银行机构用户</option></select></label>
           <label class="permission-field"><span>所属机构</span><select id="permissionInstitution" class="select-input"></select></label>
           <label class="permission-field"><span>权限级别</span><select id="permissionLevel" class="select-input"><option value="最高权限">最高权限</option><option value="业务操作">业务操作</option><option value="只读查看">只读查看</option></select></label>
-          <label class="permission-field"><span>账号状态</span><select id="permissionStatus" class="select-input"><option value="有效">有效</option><option value="无效">无效</option></select></label>
+          <label class="permission-field"><span>账号起始日期</span><input id="permissionStartDate" class="date-input" type="date" /></label>
+          <label class="permission-field"><span>账号截止日期</span><input id="permissionEndDate" class="date-input" type="date" /></label>
         </div>
-        <div class="ai-summary permission-note"><strong>权限说明：</strong>默认管理员可维护全部账号；最高权限账号可维护业务操作账号；业务操作运营账号可新增账号。</div>
+        <div class="ai-summary permission-note"><strong>权限说明：</strong>默认管理员可维护全部账号；最高权限账号可维护业务操作账号；业务操作运营账号可新增账号。账号状态由当前时间与账号有效期自动判定；有效期外仅可下载历史查询结果。</div>
       </div>
       <div class="modal-footer">
         <button class="button secondary" data-close-permission-modal>取消</button>
         <button id="savePermissionButton" class="button primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="accountValidityModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="accountValidityModalTitle">
+    <div class="modal account-validity-modal">
+      <div class="modal-header">
+        <div>
+          <div class="eyebrow">Account validity notice</div>
+          <h2 id="accountValidityModalTitle">账号有效期提醒</h2>
+        </div>
+        <button class="modal-close" data-close-account-validity-modal aria-label="关闭">×</button>
+      </div>
+      <div id="accountValidityModalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <span class="modal-help-text">如需调整账号有效期，请联系有权限的运营人员。</span>
+        <button class="button primary" data-close-account-validity-modal>我知道了</button>
       </div>
     </div>
   </div>
