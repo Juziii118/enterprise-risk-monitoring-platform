@@ -292,7 +292,10 @@ button { cursor: pointer; }
 .list-toolbar { display: flex; align-items: center; gap: 9px; }
 .list-toolbar .select-input { min-width: 145px; }
 .list-toolbar .search-input { width: 190px; }
-.list-import-actions { display: flex; align-items: center; gap: 8px; }
+.list-import-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; gap: 8px; }
+.list-import-actions .button { min-width: 126px; white-space: nowrap; }
+.list-import-actions .select-input { flex: 0 0 150px; width: 150px; }
+.list-management-heading > div:first-child { min-width: 0; padding-right: 20px; }
 #postloanListFile { display: none; }
 .list-table .data-table th:nth-child(1) { width: 170px; }
 .list-table .data-table th:nth-child(2) { width: 170px; }
@@ -495,6 +498,18 @@ button, input, select { font-family: inherit; }
 .permission-field .search-input:disabled { color: #84949e; background: #f4f7f7; cursor: not-allowed; }
 .permission-field .select-input:disabled { color: #84949e; background: #f4f7f7; cursor: not-allowed; opacity: .85; }
 .permission-note { margin-top: 18px; font-size: 11px; line-height: 1.7; }
+.credential-modal { width: min(520px, 100%); }
+.credential-lead { margin: 0 0 18px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.credential-account { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid #dce8e6; border-radius: 9px; background: #f8fbfa; }
+.credential-account span, .credential-password-field > span { color: #526575; font-size: 11px; font-weight: 600; }
+.credential-account strong { color: var(--ink); font-family: var(--font-data); font-size: 12px; }
+.credential-password-field { display: grid; gap: 7px; }
+.credential-password-field > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.credential-password-field input { width: 100%; height: 38px; font-family: var(--font-data); letter-spacing: .06em; }
+.credential-password-field .button { min-width: 92px; white-space: nowrap; }
+.credential-note { margin-top: 16px; font-size: 11px; line-height: 1.7; }
+.password-form { display: grid; gap: 13px; }
+.password-form .search-input { width: 100%; height: 38px; }
 .disabled-action { opacity: .45 !important; cursor: not-allowed !important; pointer-events: none; }
 .dashboard-heading { align-items: center; }
 .dashboard-tabs { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid #dce8e6; border-radius: 10px; background: #eef5f3; }
@@ -584,6 +599,8 @@ button, input, select { font-family: inherit; }
 .log-action.ai { color: #b87627; background: var(--orange-soft); border-color: #f6dfbf; }
 
 @media (max-width: 1050px) {
+  .list-management-heading { align-items: flex-start; flex-direction: column; gap: 14px; }
+  .list-management-heading > div:first-child { padding-right: 0; }
   .log-panel .panel-header { align-items: flex-start; flex-direction: column; gap: 14px; }
   .log-filters { flex-wrap: wrap; }
   .batch-filter-toolbar { flex-wrap: wrap; justify-content: flex-end; }

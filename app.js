@@ -61,6 +61,7 @@ const state = {
   permissionTypeFilter: "all",
   permissionStatusFilter: "all",
   permissionTargetAccount: null,
+  passwordChangeForced: false,
   quotaPage: 1,
   quotaRechargeAccount: "",
   quotaAccounts: {},
@@ -100,7 +101,7 @@ const bankNames = ["江西银行", "九江银行", "南昌农商银行", "赣州
 const logPageSize = 20;
 const quotaPageSize = 10;
 const preloanQueryCharge = 5;
-const logActions = ["登录成功", "导入名单", "查询结果", "导出结果", "删除名单", "中止名单监测", "登出平台", "修改名称", "额度充值", "额度消费"];
+const logActions = ["登录成功", "导入名单", "查询结果", "导出结果", "删除名单", "中止名单监测", "登出平台", "修改名称", "修改密码", "额度充值", "额度消费"];
 
 function pad(value) { return String(value).padStart(2, "0"); }
 
@@ -997,7 +998,7 @@ function renderListManagement() {
   const bankOptions = [...new Set(visibleLists.map(item => item.bankName))];
   const statusSummary = ["有效", "已中止", "失效", "已删除"].map(status => `${status}${visibleLists.filter(item => item.status === status).length}份`).join(" · ");
   const bankScopeClass = isBankUser() ? "hidden-app" : "";
-  view.innerHTML = `<div class="page-heading"><div><div class="eyebrow">Monitor list operations</div><h1>名单管理</h1><p>维护平台内的贷中监控名单。状态为“有效”的名单在每月1日自动运行，中止、终止及已删除状态的名单不参与当月监测；超过停止监测时间的名单自动转为“失效”。</p></div><div class="list-import-actions"><select class="select-input ${bankScopeClass}" id="importBankSelect">${importBankOptions(state.listImportBank)}</select><label class="button primary" for="postloanListFile">＋ 导入贷中名单</label><input id="postloanListFile" type="file" accept=".csv,.txt"/></div></div>
+  view.innerHTML = `<div class="page-heading list-management-heading"><div><div class="eyebrow">Monitor list operations</div><h1>名单管理</h1><p>维护平台内的贷中监控名单。状态为“有效”的名单在每月1日自动运行，中止、终止及已删除状态的名单不参与当月监测；超过停止监测时间的名单自动转为“失效”。</p></div><div class="list-import-actions"><select class="select-input ${bankScopeClass}" id="importBankSelect">${importBankOptions(state.listImportBank)}</select><label class="button primary" for="postloanListFile">＋ 导入贷中名单</label><input id="postloanListFile" type="file" accept=".csv,.txt"/></div></div>
     <div class="panel list-table"><div class="panel-header"><div><h3>贷中名单</h3><p>共 ${visibleLists.length} 份名单 · ${statusSummary} · 按导入时间倒序排列</p></div><div class="list-toolbar"><select class="select-input ${bankScopeClass}" id="listBankFilter"><option value="all">全部导入银行</option>${bankOptions.map(bank => `<option value="${escapeHTML(bank)}" ${state.listBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><input class="search-input" id="listIdSearch" type="search" placeholder="筛选名单编号" value="${escapeHTML(state.listIdQuery)}"/></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>名单编号</th><th>银行名称</th><th>企业数量</th><th>导入时间</th><th>开始监测时间</th><th>停止监测时间</th><th>操作</th></tr></thead><tbody>${listManagementRows(pageRows)}</tbody></table></div>${paginationMarkup(filtered.length, page, "listPage", 20, false)}</div>`;
   const postloanTemplateButton = document.createElement("button");
   postloanTemplateButton.type = "button";
@@ -1415,6 +1416,49 @@ function closePermissionModal() {
   state.permissionTargetAccount = null;
 }
 
+function secureRandomIndex(max) {
+  if (window.crypto?.getRandomValues) {
+    const value = new Uint32Array(1);
+    window.crypto.getRandomValues(value);
+    return value[0] % max;
+  }
+  return Math.floor(Math.random() * max);
+}
+
+function generateTemporaryPassword() {
+  const groups = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789", "!@#$%"];
+  const all = groups.join("");
+  const characters = groups.map(group => group[secureRandomIndex(group.length)]);
+  while (characters.length < 14) characters.push(all[secureRandomIndex(all.length)]);
+  for (let index = characters.length - 1; index > 0; index -= 1) {
+    const swapIndex = secureRandomIndex(index + 1);
+    [characters[index], characters[swapIndex]] = [characters[swapIndex], characters[index]];
+  }
+  return characters.join("");
+}
+
+function openTemporaryPasswordModal(account, password) {
+  document.querySelector("#temporaryPasswordAccount").textContent = account;
+  document.querySelector("#temporaryPasswordValue").value = password;
+  document.querySelector("#temporaryPasswordModal").classList.remove("hidden");
+}
+
+function closeTemporaryPasswordModal() {
+  document.querySelector("#temporaryPasswordModal").classList.add("hidden");
+  document.querySelector("#temporaryPasswordValue").value = "";
+}
+
+async function copyTemporaryPassword() {
+  const input = document.querySelector("#temporaryPasswordValue");
+  try {
+    await navigator.clipboard.writeText(input.value);
+  } catch (error) {
+    input.select();
+    document.execCommand("copy");
+  }
+  showToast("初始密码已复制");
+}
+
 function savePermissionAccount() {
   const accountInput = document.querySelector("#permissionAccount");
   const account = accountInput.value.trim();
@@ -1438,6 +1482,7 @@ function savePermissionAccount() {
   const oldRecord = oldAccount ? state.permissionAccounts.find(item => item.account === oldAccount) : null;
   if (oldRecord && !canManagePermissionRecord(oldRecord)) { showToast("当前账号无权修改该账号"); return; }
   if (!oldRecord && !canAddPermissionAccount()) { showToast("当前账号无权新增账号"); return; }
+  let temporaryPassword = "";
   if (oldAccount) {
     const index = state.permissionAccounts.findIndex(item => item.account === oldAccount);
     state.permissionAccounts[index] = nextRecord;
@@ -1451,15 +1496,17 @@ function savePermissionAccount() {
     }
     recordLog("修改账号权限", account, institution);
   } else {
+    temporaryPassword = generateTemporaryPassword();
     state.permissionAccounts.push(nextRecord);
-    demoAccounts[accountKey] = { password: "Password1234", role: type, permissionAdmin: permission === "最高权限", enabled: status === "有效" };
+    demoAccounts[accountKey] = { password: temporaryPassword, role: type, permissionAdmin: permission === "最高权限", enabled: status === "有效", mustChangePassword: true };
     recordLog("新增账号", account, institution);
   }
   state.hasPermissionAdmin = canViewPermissionManagement();
   updatePermissionNavVisibility();
   closePermissionModal();
   renderPermissions();
-  showToast(`${account} 账号权限已保存`);
+  if (temporaryPassword) openTemporaryPasswordModal(account, temporaryPassword);
+  else showToast(`${account} 账号权限已保存`);
 }
 
 function deletePermissionAccount(account) {
@@ -1905,6 +1952,53 @@ function toggleTopbarUserMenu() {
   trigger.setAttribute("aria-expanded", String(isOpen));
 }
 
+function openPasswordModal(forced = false) {
+  state.passwordChangeForced = forced;
+  document.querySelector("#passwordModalTitle").textContent = forced ? "首次登录修改密码" : "修改密码";
+  document.querySelector("#passwordModalLead").textContent = forced ? "当前使用的是系统生成的初始密码，请设置新的登录密码后继续使用平台。" : "验证当前密码后设置新的登录密码。";
+  document.querySelector("#currentPasswordField").classList.toggle("hidden-app", forced);
+  document.querySelector("#passwordModalClose").classList.toggle("hidden-app", forced);
+  document.querySelector("#cancelPasswordChange").classList.toggle("hidden-app", forced);
+  document.querySelector("#currentPasswordInput").value = "";
+  document.querySelector("#newPasswordInput").value = "";
+  document.querySelector("#confirmPasswordInput").value = "";
+  document.querySelector("#passwordModal").classList.remove("hidden");
+  closeTopbarUserMenu();
+  window.setTimeout(() => document.querySelector(forced ? "#newPasswordInput" : "#currentPasswordInput").focus(), 0);
+}
+
+function closePasswordModal() {
+  if (state.passwordChangeForced) return;
+  document.querySelector("#passwordModal").classList.add("hidden");
+}
+
+function saveCurrentPassword() {
+  const accountKey = state.currentAccount.toLowerCase();
+  const accountConfig = demoAccounts[accountKey];
+  if (!accountConfig) { showToast("当前账号信息不存在"); return; }
+  const currentPassword = document.querySelector("#currentPasswordInput").value;
+  const nextPassword = document.querySelector("#newPasswordInput").value;
+  const confirmPassword = document.querySelector("#confirmPasswordInput").value;
+  if (!state.passwordChangeForced && currentPassword !== accountConfig.password) { showToast("当前密码不正确"); return; }
+  if (nextPassword.length < 10 || !/[A-Za-z]/.test(nextPassword) || !/\d/.test(nextPassword)) { showToast("新密码至少10位，并须同时包含字母和数字"); return; }
+  if (nextPassword !== confirmPassword) { showToast("两次输入的新密码不一致"); return; }
+  if (nextPassword === accountConfig.password) { showToast("新密码不能与当前密码相同"); return; }
+  accountConfig.password = nextPassword;
+  accountConfig.mustChangePassword = false;
+  try {
+    const remembered = JSON.parse(localStorage.getItem("riskMonitorRememberedLogin") || "null");
+    if (remembered?.account?.toLowerCase() === accountKey) localStorage.setItem("riskMonitorRememberedLogin", JSON.stringify({ ...remembered, password: nextPassword }));
+  } catch (error) {
+    localStorage.removeItem("riskMonitorRememberedLogin");
+  }
+  const wasForced = state.passwordChangeForced;
+  state.passwordChangeForced = false;
+  document.querySelector("#passwordModal").classList.add("hidden");
+  recordLog("修改密码", wasForced ? "首次登录修改密码" : "账户安全设置", state.currentInstitution);
+  showToast("登录密码已修改");
+  if (wasForced) showAccountValidityNotice();
+}
+
 function renameCurrentUser() {
   const enteredName = window.prompt("请输入显示名称（留空可恢复默认头像）", state.customDisplayName || "");
   if (enteredName === null) return;
@@ -1985,7 +2079,8 @@ function enterPlatform() {
   updateRiskChangeNotification();
   recordLog("登录成功", "平台账户", profile.institution);
   showToast(`已以${profile.name}身份进入平台`);
-  showAccountValidityNotice();
+  if (accountConfig.mustChangePassword) window.setTimeout(() => openPasswordModal(true), 0);
+  else showAccountValidityNotice();
 }
 
 document.querySelector("#loginButton").addEventListener("click", enterPlatform);
@@ -2061,5 +2156,8 @@ document.querySelector("#permissionInstitution").addEventListener("change", even
   state.permissionInstitutionDraft = event.target.value;
 });
 document.querySelector("#savePermissionButton").addEventListener("click", savePermissionAccount);
+document.querySelector("#temporaryPasswordModal").addEventListener("click", event => { if (event.target.id === "temporaryPasswordModal") closeTemporaryPasswordModal(); });
+document.querySelector("#passwordModal").addEventListener("click", event => { if (event.target.id === "passwordModal") closePasswordModal(); });
+document.querySelectorAll("#currentPasswordInput, #newPasswordInput, #confirmPasswordInput").forEach(input => input.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); saveCurrentPassword(); } }));
 updatePermissionNavVisibility();
 renderDashboard();

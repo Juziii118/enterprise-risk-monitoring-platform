@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>企业流水风险监测平台</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260902b" />
 </head>
 <body>
   <section id="loginView" class="login-view">
@@ -96,7 +96,7 @@
           <button id="quotaManagementButton" class="icon-button quota-button" type="button" title="额度管理" aria-label="额度管理">￥</button>
           <div class="topbar-user-wrap">
             <button id="topbarUser" class="topbar-user" aria-expanded="false"><span class="avatar small">无</span><span id="topbarUserName">未登录</span><span class="chevron">⌄</span></button>
-            <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="renameUserButton" type="button">修改名称</button></div>
+            <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="renameUserButton" type="button">修改名称</button><button id="changePasswordButton" type="button" onclick="event.stopPropagation(); openPasswordModal(false)">修改密码</button></div>
           </div>
         </div>
       </header>
@@ -169,6 +169,46 @@
     </div>
   </div>
 
+  <div id="temporaryPasswordModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="temporaryPasswordModalTitle">
+    <div class="modal credential-modal">
+      <div class="modal-header">
+        <div><div class="eyebrow">Initial login credential</div><h2 id="temporaryPasswordModalTitle">账号已创建</h2></div>
+        <button class="modal-close" data-close-temporary-password-modal aria-label="关闭" onclick="closeTemporaryPasswordModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="credential-lead">系统已生成初始登录密码，请将账号和密码安全告知使用人。该密码仅在本窗口展示。</p>
+        <div class="credential-account"><span>登录账户</span><strong id="temporaryPasswordAccount">—</strong></div>
+        <label class="credential-password-field"><span>初始登录密码</span><div><input id="temporaryPasswordValue" class="search-input" type="text" readonly /><button id="copyTemporaryPassword" class="button secondary" type="button" onclick="copyTemporaryPassword()">复制密码</button></div></label>
+        <div class="ai-summary credential-note"><strong>安全提示：</strong>使用人首次登录后必须立即修改密码，完成修改前不能关闭改密窗口。</div>
+      </div>
+      <div class="modal-footer">
+        <button class="button primary" data-close-temporary-password-modal onclick="closeTemporaryPasswordModal()">我已记录</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="passwordModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
+    <div class="modal credential-modal">
+      <div class="modal-header">
+        <div><div class="eyebrow">Account security</div><h2 id="passwordModalTitle">修改密码</h2></div>
+        <button id="passwordModalClose" class="modal-close" data-close-password-modal aria-label="关闭" onclick="closePasswordModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="passwordModalLead" class="credential-lead">验证当前密码后设置新的登录密码。</p>
+        <div class="password-form">
+          <label id="currentPasswordField" class="permission-field"><span>当前密码</span><input id="currentPasswordInput" class="search-input" type="password" autocomplete="current-password" placeholder="请输入当前密码" /></label>
+          <label class="permission-field"><span>新密码</span><input id="newPasswordInput" class="search-input" type="password" autocomplete="new-password" placeholder="至少10位，须包含字母和数字" /></label>
+          <label class="permission-field"><span>确认新密码</span><input id="confirmPasswordInput" class="search-input" type="password" autocomplete="new-password" placeholder="请再次输入新密码" /></label>
+        </div>
+        <div class="ai-summary credential-note"><strong>密码要求：</strong>至少10位，并同时包含英文字母和数字；请勿与初始密码或当前密码相同。</div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelPasswordChange" class="button secondary" data-close-password-modal onclick="closePasswordModal()">取消</button>
+        <button id="savePasswordButton" class="button primary" type="button" onclick="saveCurrentPassword()">保存新密码</button>
+      </div>
+    </div>
+  </div>
+
   <div id="accountValidityModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="accountValidityModalTitle">
     <div class="modal account-validity-modal">
       <div class="modal-header">
@@ -221,6 +261,6 @@
   </div>
 
   <div id="toast" class="toast" role="status"></div>
-  <script src="app.js"></script>
+  <script src="app.js?v=20260902e"></script>
 </body>
 </html>
