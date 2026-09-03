@@ -587,7 +587,7 @@ function renderBankDashboard() {
       <button class="button ghost" id="refreshDashboard">↻ 刷新数据</button>
     </div>
     <div class="hero-banner">
-      <div class="hero-content"><div class="eyebrow">本月风险监测概览</div><h1>把风险线索，变成可核查的结果</h1><p>基于经授权使用的企业流水数据，支持贷前即时筛查与贷中月度监控。</p></div>
+      <div class="hero-content"><div class="eyebrow">本月风险监测概览</div><h1>企业流水风险监测概览</h1><p>基于经授权使用的企业流水数据，支持贷前即时筛查与贷中月度监控。</p></div>
       <div class="hero-meta"><strong>1,286</strong>家企业已完成本月监测<br/>数据截止：2026-07-31</div>
     </div>
     <div class="stat-grid">
@@ -844,7 +844,7 @@ function renderDashboardOverview(institution = "") {
   const headingDescription = institution ? "面向机构用户的本机构业务数据概览与风险趋势分析。" : "面向运营人员的全量业务数据概览与风险趋势分析。";
   const heroDescription = institution ? `汇总${escapeHTML(institution)}的名单查询和月度监控结果，支持按业务场景查看风险变化。` : "汇总所有用户的名单查询和月度监控结果，支持按业务场景查看风险变化。";
   document.querySelector("#dashboardView").innerHTML = `<div class="page-heading dashboard-heading"><div><div class="eyebrow">Operations overview / ${mode === "preloan" ? "Pre-loan" : "Post-loan"}</div><h1>总览</h1><p>${headingDescription}</p></div><div class="dashboard-tabs" role="tablist"><button class="dashboard-tab ${mode === "preloan" ? "active" : ""}" data-dashboard-mode="preloan">贷前总览</button><button class="dashboard-tab ${mode === "postloan" ? "active" : ""}" data-dashboard-mode="postloan">贷中总览</button></div></div>
-    <div class="hero-banner"><div class="hero-content"><div class="eyebrow">${heroLabel}</div><h1>把风险线索，变成可核查的结果</h1><p>${heroDescription}</p></div><div class="hero-meta"><strong>${overview.allTotal.toLocaleString()}</strong>${mode === "preloan" ? "家企业已完成贷前查询" : "家企业已完成贷中跑批"}<br/>统计范围：截至当前</div></div>
+    <div class="hero-banner"><div class="hero-content"><div class="eyebrow">${heroLabel}</div><h1>${mode === "preloan" ? "贷前查询业务概览" : "贷中监控业务概览"}</h1><p>${heroDescription}</p></div><div class="hero-meta"><strong>${overview.allTotal.toLocaleString()}</strong>${mode === "preloan" ? "家企业已完成贷前查询" : "家企业已完成贷中跑批"}<br/>统计范围：截至当前</div></div>
     <div class="stat-grid">${operatorStatMarkup(overview, mode)}</div>
     <div class="dashboard-grid operator-dashboard-grid"><div>${riskDistributionMarkup(overview)}</div><div>${dashboardRiskEventMarkup(mode)}</div></div>
     <div class="panel trend-panel"><div class="panel-header"><div><h3>风险企业趋势</h3><p>近六个月高风险与中风险企业数量变化</p></div><div class="trend-header-right"><div class="trend-legend"><span><i class="legend-dot" style="background:var(--red)"></i>高风险</span><span><i class="legend-dot" style="background:var(--orange)"></i>中风险</span></div><span class="muted-text">单位：家</span></div></div><div class="panel-body">${lineChartMarkup(trend)}</div></div>`;
