@@ -291,7 +291,7 @@ function buildCurrentPostloanDataset() {
   const activeLists = state.listRecords.filter(list => list.status === "有效");
   const currentMonitorMonth = "2026/07";
   const currentBatches = activeLists.map(list => {
-    const rows = buildDemoResults(3, list.id, list.bankName).slice(0, list.companyCount).map(row => ({ ...row, month: "2026-07" }));
+    const rows = buildDemoResults(5, list.id, list.bankName).slice(0, list.companyCount).map(row => ({ ...row, month: "2026-07" }));
     const counts = riskCountsForRows(rows);
     return { month: "2026年07月", range: "2026-07-01 — 2026-07-31", total: rows.length, ...counts, status: "已完成", time: "2026-08-05 09:18", listId: list.id, bankName: list.bankName, rows };
   });
@@ -1067,7 +1067,7 @@ function renderAnomalyAlerts() {
   const listOptions = [...new Set(rows.map(row => row.listId).filter(Boolean))].sort();
   const includeBank = !isBankUser();
   const bankFilter = includeBank ? `<select class="select-input" id="anomalyBankFilter"><option value="all">全部银行机构</option>${bankOptions.map(bank => `<option value="${escapeHTML(bank)}" ${state.anomalyBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select>` : "";
-  const filters = `${bankFilter}<select class="select-input list-filter-input" id="anomalyListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.anomalyListFilter === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select><select class="select-input" id="anomalyCurrentLevelFilter"><option value="all">全部本月风险等级</option><option value="high" ${state.anomalyCurrentLevelFilter === "high" ? "selected" : ""}>高风险</option><option value="medium" ${state.anomalyCurrentLevelFilter === "medium" ? "selected" : ""}>中风险</option></select><select class="select-input" id="anomalyPreviousLevelFilter"><option value="all">全部上月风险等级</option><option value="low" ${state.anomalyPreviousLevelFilter === "low" ? "selected" : ""}>低风险</option><option value="none" ${state.anomalyPreviousLevelFilter === "none" ? "selected" : ""}>无风险</option></select>`;
+  const filters = `${bankFilter}<select class="select-input list-filter-input" id="anomalyListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.anomalyListFilter === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select><select class="select-input" id="anomalyCurrentLevelFilter"><option value="all">全部本月风险等级</option><option value="high" ${state.anomalyCurrentLevelFilter === "high" ? "selected" : ""}>高风险</option><option value="medium" ${state.anomalyCurrentLevelFilter === "medium" ? "selected" : ""}>中风险</option></select><select class="select-input" id="anomalyPreviousLevelFilter"><option value="all">全部上月风险等级</option><option value="medium" ${state.anomalyPreviousLevelFilter === "medium" ? "selected" : ""}>中风险</option><option value="low" ${state.anomalyPreviousLevelFilter === "low" ? "selected" : ""}>低风险</option><option value="none" ${state.anomalyPreviousLevelFilter === "none" ? "selected" : ""}>无风险</option></select>`;
   const bankHeader = includeBank ? "<th>银行机构</th>" : "";
   const colSpan = includeBank ? 7 : 6;
   const body = pageRows.length ? pageRows.map(row => `<tr><td><strong>${escapeHTML(row.name)}</strong></td><td class="muted-text">${escapeHTML(row.code)}</td><td><span class="list-id table-list-id">${escapeHTML(row.listId)}</span></td>${includeBank ? `<td>${escapeHTML(row.bankName)}</td>` : ""}<td>${riskBadge(row.level)}</td><td>${riskBadge(row.previousLevel)}</td><td><div class="rule-tags">${formatRiskEvents(row.events || [])}</div></td></tr>`).join("") : `<tr><td colspan="${colSpan}"><div class="empty-state">没有符合条件的异常风险变动企业</div></td></tr>`;
@@ -1300,14 +1300,17 @@ function logActionClass(action) {
 
 function logRows(records) {
   if (!records.length) return `<tr><td colspan="6"><div class="empty-state">没有符合条件的操作记录</div></td></tr>`;
-  return records.map(log => `<tr>
-    <td><strong class="log-date">${escapeHTML(log.date)}</strong><span class="log-id">${escapeHTML(log.id)}</span></td>
-    <td><strong>${escapeHTML(log.bankName)}</strong></td>
-    <td><strong>${escapeHTML(log.operator)}</strong><span class="log-account">${escapeHTML(log.account)}</span></td>
-    <td><span class="log-action ${logActionClass(log.action)}">${escapeHTML(log.action)}</span></td>
-    <td class="muted-text">${escapeHTML(log.target)}</td>
-    <td><span class="status-badge complete">${escapeHTML(log.result)}</span></td>
-  </tr>`).join("");
+  return records.map(log => {
+    const action = String(log.action || "").replace(/\s+/g, "");
+    return `<tr>
+      <td><strong class="log-date">${escapeHTML(log.date)}</strong><span class="log-id">${escapeHTML(log.id)}</span></td>
+      <td><strong>${escapeHTML(log.bankName)}</strong></td>
+      <td><strong>${escapeHTML(log.operator)}</strong><span class="log-account">${escapeHTML(log.account)}</span></td>
+      <td class="log-action-cell"><span class="log-action ${logActionClass(action)}">${escapeHTML(action)}</span></td>
+      <td class="muted-text">${escapeHTML(log.target)}</td>
+      <td><span class="status-badge complete">${escapeHTML(log.result)}</span></td>
+    </tr>`;
+  }).join("");
 }
 
 function logPaginationMarkup(total, page) {
