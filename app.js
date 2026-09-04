@@ -104,6 +104,7 @@ const bankNames = [
   "农业银行", "平安银行", "浦发银行", "上饶银行", "兴业银行", "邮储银行",
   "裕民银行", "渣打银行", "中国银行", "浙商银行", "招商银行", "中信银行"
 ];
+const demoBankAccountNames = ["九江银行", "江西银行"];
 const logPageSize = 20;
 const quotaPageSize = 10;
 const preloanQueryCharge = 5;
@@ -384,7 +385,7 @@ const demoAccounts = {
   "001@jxphzx.com": { password: "Password1234", role: "operator", permissionAdmin: true, enabled: true },
   "002@jxphzx.com": { password: "Password1234", role: "operator", permissionAdmin: true, enabled: true },
   "003@jxphzx.com": { password: "Password1234", role: "operator", permissionAdmin: false, enabled: true },
-  ...Object.fromEntries(bankNames.map(bank => [bank, { password: "Password1234", role: "bank", permissionAdmin: false, enabled: true }]))
+  ...Object.fromEntries(demoBankAccountNames.map(bank => [bank, { password: "Password1234", role: "bank", permissionAdmin: false, enabled: true }]))
 };
 refreshAccountValidity();
 const accountFormats = [
@@ -396,7 +397,7 @@ const initialQuotaBalances = {
   "001@jxphzx.com": 1000,
   "002@jxphzx.com": 1000,
   "003@jxphzx.com": 300,
-  ...Object.fromEntries(bankNames.map(bank => [bank, 100]))
+  ...Object.fromEntries(demoBankAccountNames.map(bank => [bank, 100]))
 };
 
 function initializeQuotaData() {
@@ -510,7 +511,7 @@ function buildPermissionAccounts() {
     { account: "002@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "最高权限", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/12", builtin: false },
     { account: "003@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/15", builtin: false }
   ];
-  const bankAccounts = bankNames.map(bank => ({
+  const bankAccounts = demoBankAccountNames.map(bank => ({
     account: bank,
     type: "银行机构用户",
     institution: bank,
@@ -1014,7 +1015,7 @@ function renderListManagement() {
   postloanTemplateButton.className = "button ghost";
   postloanTemplateButton.id = "downloadPostloanTemplate";
   postloanTemplateButton.textContent = "↓ 下载名单模板";
-  postloanTemplateButton.addEventListener("click", () => downloadText("企业名称,组织机构代码\n示例企业有限公司,123456789\n", "贷中监控名单模板.csv"));
+  postloanTemplateButton.addEventListener("click", () => downloadText("\uFEFF企业名称,组织机构代码,机构编码\n示例企业,XXXXXXXXX,CXXXXXXXXXXXXX\n", "贷中监控名单模板.csv"));
   document.querySelector(".list-import-actions").appendChild(postloanTemplateButton);
   const canOperate = hasActiveAccountValidity();
   const postloanBankSelect = document.querySelector("#importBankSelect");
@@ -1128,8 +1129,8 @@ function renderQuota() {
 function downloadList(listId) {
   const list = state.listRecords.find(item => item.id === listId);
   if (!list) return;
-  const rows = ["企业名称,组织机构代码"];
-  for (let index = 0; index < list.companyCount; index += 1) rows.push(`示例企业${String(index + 1).padStart(4, "0")},${String(360100001 + index).padStart(9, "0")}`);
+  const rows = ["企业名称,组织机构代码,机构编码"];
+  for (let index = 0; index < list.companyCount; index += 1) rows.push(`示例企业${String(index + 1).padStart(4, "0")},${String(360100001 + index).padStart(9, "0")},C${String(index + 1).padStart(13, "0")}`);
   downloadText("\uFEFF" + rows.join("\n"), `${list.id}-企业名单.csv`);
   recordLog("下载名单", list.id, list.bankName);
   showToast(`已下载 ${list.id}，共 ${list.companyCount.toLocaleString()} 家企业`);
@@ -1708,7 +1709,7 @@ function renderPreloan() {
     ? resultTable(selectedRecord.results, "preloan", "查询结果", `名单编号 ${selectedRecord.listId} · ${selectedRecord.companyCount} 家企业 · 按企业名称升序 · 每页展示 ${pageSize} 家`, true, false)
     : `<div class="panel result-panel preloan-query-empty"><div class="panel-header"><div><h3>查询结果</h3><p>请选择上方名单的“查询”，查看该名单的企业风险结果</p></div></div><div class="empty-state">当前未选择查询名单，请先在“当前月度导入名单”中点击“查询”</div></div>`;
   view.innerHTML = `<div class="page-heading"><div><div class="eyebrow">On-demand screening</div><h1 class="page-title-with-help">贷前筛查<span class="help-trigger" tabindex="0" aria-label="查看筛查说明">?</span><span class="help-tooltip" role="tooltip"><strong>筛查说明</strong><span>查询方式：单次导入 · 即时返回</span><span>数据范围：后台最新可用监测月份</span><span>结果形式：一家企业一行，可批量导出</span><span>风险输出：风险等级、风险事件</span></span></h1><p>导入企业名单，单次调用后台数据并即时获取风险识别结果；每次查询自动生成唯一名单编号。</p></div><button class="button ghost" id="downloadTemplate">↓ 下载名单模板</button></div>
-    <div class="panel subpage-panel upload-panel"><div class="upload-box"><div class="upload-icon">⇧</div><h3>导入企业名单</h3><p>仅需“企业名称”和“9位组织机构代码”，支持 CSV 文件</p><div class="upload-actions"><select class="select-input" id="preloanBankSelect">${importBankOptions(state.preloanBank)}</select><label class="button primary" for="preloanFile">选择文件</label><input id="preloanFile" type="file" accept=".csv,.txt"/><button class="button teal" id="demoPreloan">使用演示名单</button></div></div>${renderPreloanListPanel(currentLists, includeBank)}</div>
+    <div class="panel subpage-panel upload-panel"><div class="upload-box"><div class="upload-icon">⇧</div><h3>导入企业名单</h3><p>需包含“企业名称”“9位组织机构代码”和“机构编码”，支持 CSV 文件</p><div class="upload-actions"><select class="select-input" id="preloanBankSelect">${importBankOptions(state.preloanBank)}</select><label class="button primary" for="preloanFile">选择文件</label><input id="preloanFile" type="file" accept=".csv,.txt"/><button class="button teal" id="demoPreloan">使用演示名单</button></div></div>${renderPreloanListPanel(currentLists, includeBank)}</div>
     ${queryPanel}
     ${renderPreloanHistory()}`;
   const canOperate = hasActiveAccountValidity();
@@ -1721,7 +1722,7 @@ function renderPreloan() {
   demoPreloan.disabled = !canOperate;
   preloanFileLabel.classList.toggle("disabled-action", !canOperate);
   if (!canOperate) demoPreloan.title = "账号已超出有效期，仅支持下载历史查询结果";
-  document.querySelector("#downloadTemplate").addEventListener("click", () => downloadText("企业名称,组织机构代码\n示例企业有限公司,123456789\n", "贷前筛查名单模板.csv"));
+  document.querySelector("#downloadTemplate").addEventListener("click", () => downloadText("\uFEFF企业名称,组织机构代码,机构编码\n示例企业,XXXXXXXXX,CXXXXXXXXXXXXX\n", "贷前筛查名单模板.csv"));
   document.querySelector("#demoPreloan").insertAdjacentElement("afterend", document.querySelector("#downloadTemplate"));
   document.querySelector("#preloanBankSelect").addEventListener("change", event => {
     if (event.target.value === "__add_bank__") {
@@ -1834,7 +1835,7 @@ function downloadText(content, filename) {
 }
 
 function parseCSV(text) {
-  return text.trim().split(/\r?\n/).slice(1).map(line => line.split(",")).filter(row => row.length >= 2 && row[0].trim() && row[1].trim()).map((row, index) => ({ name: row[0].trim(), code: row[1].trim(), month: "2026-07", events: index % 3 === 0 ? ["交易信息完整性异常"] : [], level: index % 3 === 0 ? "medium" : "none", ai: "已发布" })).sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+  return text.trim().split(/\r?\n/).slice(1).map(line => line.split(",")).filter(row => row.length >= 3 && row[0].trim() && row[1].trim() && row[2].trim()).map((row, index) => ({ name: row[0].trim(), code: row[1].trim(), institutionCode: row[2].trim(), month: "2026-07", events: index % 3 === 0 ? ["交易信息完整性异常"] : [], level: index % 3 === 0 ? "medium" : "none", ai: "已发布" })).sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
 }
 
 function handleFileUpload(event) {
