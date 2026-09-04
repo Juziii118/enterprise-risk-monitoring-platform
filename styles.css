@@ -989,8 +989,9 @@ html, body { background: var(--canvas); }
 .login-decoration { display: none; }
 .login-card { border-color: #d5dde2; border-radius: 8px; background: #fff; box-shadow: 0 8px 28px rgba(23, 54, 77, .10); }
 .login-card:before { left: 0; right: 0; height: 3px; border-radius: 8px 8px 0 0; background: var(--teal); }
-.login-brand-logo { display: block; width: 34px; height: 34px; flex: 0 0 34px; object-fit: contain; }
+.brand-logo-image { display: block; width: 34px; height: 34px; flex: 0 0 34px; object-fit: contain; }
 .login-brand-name { line-height: 34px; white-space: nowrap; }
+.sidebar-brand-name { min-width: 0; font-size: 13px; line-height: 34px; letter-spacing: 0; white-space: nowrap; }
 .login-heading { margin: 32px 0 24px; }
 .login-heading h1 { margin-bottom: 0; }
 
