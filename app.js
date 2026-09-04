@@ -855,10 +855,11 @@ function renderDashboardOverview(institution = "") {
   const trend = buildOperatorTrend(overview);
   const modeLabel = mode === "preloan" ? "贷前总览" : "贷中总览";
   const heroLabel = mode === "preloan" ? "累计贷前查询概览" : "累计贷中监控概览";
-  const headingDescription = institution ? "面向机构用户的本机构业务数据概览与风险趋势分析。" : "面向运营人员的全量业务数据概览与风险趋势分析。";
-  const heroDescription = institution ? `汇总${escapeHTML(institution)}的名单查询和月度监控结果，支持按业务场景查看风险变化。` : "汇总所有用户的名单查询和月度监控结果，支持按业务场景查看风险变化。";
-  document.querySelector("#dashboardView").innerHTML = `<div class="page-heading dashboard-heading"><div><div class="eyebrow">Operations overview / ${mode === "preloan" ? "Pre-loan" : "Post-loan"}</div><h1>总览</h1><p>${headingDescription}</p></div><div class="dashboard-tabs" role="tablist"><button class="dashboard-tab ${mode === "preloan" ? "active" : ""}" data-dashboard-mode="preloan">贷前总览</button><button class="dashboard-tab ${mode === "postloan" ? "active" : ""}" data-dashboard-mode="postloan">贷中总览</button></div></div>
-    <div class="hero-banner"><div class="hero-content"><div class="eyebrow">${heroLabel}</div><h1>${mode === "preloan" ? "贷前查询业务概览" : "贷中监控业务概览"}</h1><p>${heroDescription}</p></div><div class="hero-meta"><strong>${overview.allTotal.toLocaleString()}</strong>${mode === "preloan" ? "家企业已完成贷前查询" : "家企业已完成贷中跑批"}<br/>统计范围：截至当前</div></div>
+  const headingDescription = "";
+  const heroDescription = "";
+  const compactClass = " compact";
+  document.querySelector("#dashboardView").innerHTML = `<div class="page-heading dashboard-heading${compactClass}"><div><div class="eyebrow">Operations overview / ${mode === "preloan" ? "Pre-loan" : "Post-loan"}</div><h1>总览</h1>${headingDescription}</div><div class="dashboard-tabs" role="tablist"><button class="dashboard-tab ${mode === "preloan" ? "active" : ""}" data-dashboard-mode="preloan">贷前总览</button><button class="dashboard-tab ${mode === "postloan" ? "active" : ""}" data-dashboard-mode="postloan">贷中总览</button></div></div>
+    <div class="hero-banner${compactClass}"><div class="hero-content"><div class="eyebrow">${heroLabel}</div><h1>${mode === "preloan" ? "贷前查询业务概览" : "贷中监控业务概览"}</h1>${heroDescription}</div><div class="hero-meta"><strong>${overview.allTotal.toLocaleString()}</strong>${mode === "preloan" ? "家企业已完成贷前查询" : "家企业已完成贷中跑批"}<br/>统计范围：截至当前</div></div>
     <div class="stat-grid">${operatorStatMarkup(overview, mode)}</div>
     <div class="dashboard-grid operator-dashboard-grid"><div>${riskDistributionMarkup(overview)}</div><div>${dashboardRiskEventMarkup(mode)}</div></div>
     <div class="panel trend-panel"><div class="panel-header"><div><h3>风险企业趋势</h3><p>近六个月高风险与中风险企业数量变化</p></div><div class="trend-header-right"><div class="trend-legend"><span><i class="legend-dot" style="background:var(--red)"></i>高风险</span><span><i class="legend-dot" style="background:var(--orange)"></i>中风险</span></div><span class="muted-text">单位：家</span></div></div><div class="panel-body">${lineChartMarkup(trend)}</div></div>`;
