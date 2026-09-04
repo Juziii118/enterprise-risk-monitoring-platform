@@ -97,7 +97,13 @@ const trendData = [
   { month: "2026/07", high: 38, medium: 164 }
 ];
 
-const bankNames = ["江西银行", "九江银行", "南昌农商银行", "赣州银行", "上饶银行", "景德镇农商银行"];
+const bankNames = [
+  "渤海银行", "北京银行", "大新银行", "东亚银行", "光大银行", "广发银行",
+  "国家开发银行", "工商银行", "赣州银行", "汇丰银行", "华夏银行", "九江银行",
+  "建设银行", "交通银行", "江西银行", "民生银行", "农业发展银行", "农村商业银行",
+  "农业银行", "平安银行", "浦发银行", "上饶银行", "兴业银行", "邮储银行",
+  "裕民银行", "渣打银行", "中国银行", "浙商银行", "招商银行", "中信银行"
+];
 const logPageSize = 20;
 const quotaPageSize = 10;
 const preloanQueryCharge = 5;
@@ -193,10 +199,10 @@ function buildListRecords() {
   const samples = [
     { bankName: "江西银行", companyCount: 9, status: "有效" },
     { bankName: "九江银行", companyCount: 7, status: "有效" },
-    { bankName: "南昌农商银行", companyCount: 6, status: "有效" },
+    { bankName: "农村商业银行", companyCount: 6, status: "有效" },
     { bankName: "赣州银行", companyCount: 8, status: "有效" },
     { bankName: "上饶银行", companyCount: 6, status: "有效" },
-    { bankName: "景德镇农商银行", companyCount: 5, status: "已中止" },
+    { bankName: "农业银行", companyCount: 5, status: "已中止" },
     { bankName: "江西银行", companyCount: 4, status: "已中止" },
     { bankName: "九江银行", companyCount: 3, status: "失效" }
   ];
@@ -335,7 +341,7 @@ refreshExpiredListStatuses();
 const initialPreloanHistory = [
   { date: new Date("2026-08-25T08:45:00"), bankName: "江西银行", seed: 0 },
   { date: new Date("2026-07-18T14:20:00"), bankName: "九江银行", seed: 1 },
-  { date: new Date("2026-06-12T10:16:00"), bankName: "南昌农商银行", seed: 2 },
+  { date: new Date("2026-06-12T10:16:00"), bankName: "农村商业银行", seed: 2 },
   { date: new Date("2026-05-09T16:32:00"), bankName: "赣州银行", seed: 3 }
 ];
 state.preloanResults = buildDemoResults(0, createPreloanListId(initialPreloanHistory[0].date), initialPreloanHistory[0].bankName);
@@ -378,24 +384,19 @@ const demoAccounts = {
   "001@jxphzx.com": { password: "Password1234", role: "operator", permissionAdmin: true, enabled: true },
   "002@jxphzx.com": { password: "Password1234", role: "operator", permissionAdmin: true, enabled: true },
   "003@jxphzx.com": { password: "Password1234", role: "operator", permissionAdmin: false, enabled: true },
-  "aaa@jsbank.com": { password: "Password1234", role: "bank", permissionAdmin: false, enabled: true },
-  "ccc@jsbank.com": { password: "Password1234", role: "bank", permissionAdmin: false, enabled: true },
-  "bbb@jjbank.com": { password: "Password1234", role: "bank", permissionAdmin: false, enabled: true }
+  ...Object.fromEntries(bankNames.map(bank => [bank, { password: "Password1234", role: "bank", permissionAdmin: false, enabled: true }]))
 };
 refreshAccountValidity();
 const accountFormats = [
   { role: "operator", pattern: /^[^@\s]+@jxphzx\.com$/i },
-  { role: "bank", pattern: /^[^@\s]+@[^@\s]+bank\.com$/i }
+  { role: "bank", pattern: /^[^@\s]{2,40}$/u }
 ];
-const bankDomainInstitutions = { "jsbank.com": "江西银行", "jjbank.com": "九江银行" };
 
 const initialQuotaBalances = {
   "001@jxphzx.com": 1000,
   "002@jxphzx.com": 1000,
   "003@jxphzx.com": 300,
-  "aaa@jsbank.com": 100,
-  "bbb@jjbank.com": 100,
-  "ccc@jsbank.com": 100
+  ...Object.fromEntries(bankNames.map(bank => [bank, 100]))
 };
 
 function initializeQuotaData() {
@@ -496,8 +497,7 @@ function isBankUser() { return demoAccounts[state.currentAccount]?.role === "ban
 
 function currentBankInstitution() {
   if (!isBankUser()) return "";
-  const domain = String(state.currentAccount).split("@")[1]?.toLowerCase() || "";
-  return bankDomainInstitutions[domain] || getPermissionRecord()?.institution || domain;
+  return getPermissionRecord()?.institution || state.currentAccount;
 }
 
 function belongsToCurrentBank(bankName) {
@@ -505,14 +505,23 @@ function belongsToCurrentBank(bankName) {
 }
 
 function buildPermissionAccounts() {
-  return [
+  const operatorAccounts = [
     { account: "001@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "最高权限", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/01", builtin: true },
     { account: "002@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "最高权限", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/12", builtin: false },
-    { account: "003@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/15", builtin: false },
-    { account: "AAA@jsbank.com", type: "银行机构用户", institution: "江西银行", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/18", builtin: false },
-    { account: "CCC@jsbank.com", type: "银行机构用户", institution: "江西银行", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/22", builtin: false },
-    { account: "BBB@jjbank.com", type: "银行机构用户", institution: "九江银行", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/20", builtin: false }
+    { account: "003@jxphzx.com", type: "运营账号", institution: "平台运营中心", permission: "业务操作", status: "有效", startDate: "2026-01-01", endDate: "2099-12-31", createdAt: "2026/08/15", builtin: false }
   ];
+  const bankAccounts = bankNames.map(bank => ({
+    account: bank,
+    type: "银行机构用户",
+    institution: bank,
+    permission: "业务操作",
+    status: "有效",
+    startDate: "2026-01-01",
+    endDate: "2099-12-31",
+    createdAt: "2026/08/18",
+    builtin: false
+  }));
+  return [...operatorAccounts, ...bankAccounts];
 }
 
 function getPermissionRecord(account = state.currentAccount) {
@@ -1382,11 +1391,31 @@ function renderPermissions() {
 
 function syncPermissionInstitutionOptions(selected = "") {
   const type = document.querySelector("#permissionType").value;
-  const existingInstitutions = state.permissionAccounts.map(item => item.institution);
-  const options = type === "operator" ? ["平台运营中心", ...state.customInstitutionNames, ...existingInstitutions.filter(item => item !== "平台运营中心")] : [...bankNames, ...state.customInstitutionNames, ...existingInstitutions];
+  const expectedType = type === "operator" ? "运营账号" : "银行机构用户";
+  const existingInstitutions = state.permissionAccounts.filter(item => item.type === expectedType).map(item => item.institution);
+  const options = type === "operator" ? ["平台运营中心", ...state.customInstitutionNames, ...existingInstitutions] : [...bankNames, ...state.customInstitutionNames, ...existingInstitutions];
   const uniqueOptions = [...new Set(options.filter(Boolean))];
   const addOption = state.permissionTargetAccount ? "" : `<option value="__add_institution__">新增机构</option>`;
   document.querySelector("#permissionInstitution").innerHTML = `${uniqueOptions.map(institution => `<option value="${escapeHTML(institution)}" ${selected === institution ? "selected" : ""}>${escapeHTML(institution)}</option>`).join("")}${addOption}`;
+  syncPermissionAccountField();
+}
+
+function syncPermissionAccountField() {
+  const type = document.querySelector("#permissionType").value;
+  const accountInput = document.querySelector("#permissionAccount");
+  const institution = document.querySelector("#permissionInstitution").value;
+  const record = state.permissionTargetAccount ? state.permissionAccounts.find(item => item.account === state.permissionTargetAccount) : null;
+  if (type === "bank") {
+    accountInput.value = institution === "__add_institution__" ? "" : institution;
+    accountInput.readOnly = true;
+    accountInput.dataset.bankAccount = "true";
+    accountInput.placeholder = "银行账号与所属机构名称一致";
+  } else {
+    if (!record && accountInput.dataset.bankAccount === "true") accountInput.value = "";
+    accountInput.readOnly = Boolean(record?.builtin);
+    accountInput.dataset.bankAccount = "false";
+    accountInput.placeholder = "如：003@jxphzx.com";
+  }
 }
 
 function openPermissionModal(account = null) {
@@ -1398,6 +1427,7 @@ function openPermissionModal(account = null) {
   const accountInput = document.querySelector("#permissionAccount");
   accountInput.value = record?.account || "";
   accountInput.disabled = Boolean(record?.builtin);
+  accountInput.dataset.bankAccount = record?.type === "银行机构用户" ? "true" : "false";
   document.querySelector("#permissionType").value = record?.type === "银行机构用户" ? "bank" : "operator";
   state.permissionInstitutionDraft = record?.institution || "";
   syncPermissionInstitutionOptions(record?.institution || "");
@@ -1473,9 +1503,12 @@ function savePermissionAccount() {
   if (!startDate || !endDate || !start || !end || start > end) { showToast("请填写有效的账号起止日期，且起始日期不得晚于截止日期"); return; }
   const status = accountValidityStatus({ startDate, endDate });
   const format = accountFormats.find(item => item.role === type);
-  if (!account || !format?.pattern.test(accountKey)) { showToast(type === "operator" ? "运营账号格式应为xxx@jxphzx.com" : "银行机构账号格式应为xxx@XXXbank.com"); return; }
+  if (!account || !format?.pattern.test(accountKey)) { showToast(type === "operator" ? "运营账号格式应为xxx@jxphzx.com" : "请选择有效的银行机构"); return; }
+  if (type === "bank" && account !== institution) { showToast("银行机构账号必须与所属银行机构名称一致"); return; }
   const duplicate = state.permissionAccounts.some(item => item.account.toLowerCase() === accountKey && item.account.toLowerCase() !== String(state.permissionTargetAccount || "").toLowerCase());
   if (duplicate) { showToast("该登录账户已存在"); return; }
+  const duplicateBank = type === "bank" && state.permissionAccounts.some(item => item.type === "银行机构用户" && item.institution === institution && item.account !== state.permissionTargetAccount);
+  if (duplicateBank) { showToast("该银行机构已配置登录账号，每家银行仅保留一个账号"); return; }
   if (accountKey === state.currentAccount.toLowerCase() && (permission !== "最高权限" || status !== "有效")) { showToast("当前登录管理员不可取消自身最高权限或有效状态"); return; }
   const nextRecord = { account, type: type === "bank" ? "银行机构用户" : "运营账号", institution, permission, status, startDate, endDate, createdAt: state.permissionTargetAccount ? state.permissionAccounts.find(item => item.account === state.permissionTargetAccount).createdAt : formatDate(new Date()), builtin: state.permissionTargetAccount ? state.permissionAccounts.find(item => item.account === state.permissionTargetAccount).builtin : false };
   const oldAccount = state.permissionTargetAccount;
@@ -2154,6 +2187,7 @@ document.querySelector("#permissionInstitution").addEventListener("change", even
     return;
   }
   state.permissionInstitutionDraft = event.target.value;
+  syncPermissionAccountField();
 });
 document.querySelector("#savePermissionButton").addEventListener("click", savePermissionAccount);
 document.querySelector("#temporaryPasswordModal").addEventListener("click", event => { if (event.target.id === "temporaryPasswordModal") closeTemporaryPasswordModal(); });
