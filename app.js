@@ -38,7 +38,6 @@ const state = {
   currentAccount: "未登录",
   currentOperator: "未登录",
   currentInstitution: "用户",
-  customAvatar: "",
   hasPermissionAdmin: false,
   permissionInstitutionDraft: "",
   customInstitutionNames: [],
@@ -108,7 +107,7 @@ const demoBankAccountNames = ["九江银行", "江西银行"];
 const logPageSize = 20;
 const quotaPageSize = 10;
 const preloanQueryCharge = 5;
-const logActions = ["登录成功", "导入名单", "查询结果", "导出结果", "删除名单", "中止名单监测", "登出平台", "修改头像", "修改密码", "额度充值", "额度消费"];
+const logActions = ["登录成功", "导入名单", "查询结果", "导出结果", "删除名单", "中止名单监测", "登出平台", "修改密码", "额度充值", "额度消费"];
 
 function pad(value) { return String(value).padStart(2, "0"); }
 
@@ -1968,15 +1967,6 @@ function updateUserIdentityUI() {
   document.querySelector("#sidebarUserName").textContent = state.currentAccount;
   document.querySelector("#topbarUserName").textContent = state.currentAccount;
   document.querySelector("#sidebarInstitution").textContent = state.currentInstitution;
-  document.querySelectorAll(".avatar").forEach(avatar => {
-    avatar.textContent = state.customAvatar ? "" : "无";
-    avatar.classList.toggle("has-image", Boolean(state.customAvatar));
-    avatar.style.backgroundImage = state.customAvatar ? `url("${state.customAvatar}")` : "";
-  });
-}
-
-function avatarStorageKey() {
-  return `riskMonitorAvatar:${state.currentAccount}`;
 }
 
 function closeTopbarUserMenu() {
@@ -2040,37 +2030,12 @@ function saveCurrentPassword() {
   if (wasForced) showAccountValidityNotice();
 }
 
-function chooseCurrentUserAvatar() {
-  closeTopbarUserMenu();
-  const input = document.querySelector("#avatarFileInput");
-  input.value = "";
-  input.click();
-}
-
-function updateCurrentUserAvatar(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  if (!/^image\/(png|jpeg|webp)$/i.test(file.type)) { showToast("请选择 PNG、JPG 或 WebP 图片"); return; }
-  if (file.size > 2 * 1024 * 1024) { showToast("头像图片不能超过 2MB"); return; }
-  const reader = new FileReader();
-  reader.onload = () => {
-    state.customAvatar = String(reader.result || "");
-    localStorage.setItem(avatarStorageKey(), state.customAvatar);
-    recordLog("修改头像", "账户头像", state.currentInstitution);
-    updateUserIdentityUI();
-    showToast("头像已修改");
-  };
-  reader.onerror = () => showToast("头像读取失败，请重新选择");
-  reader.readAsDataURL(file);
-}
-
 function logoutPlatform() {
   recordLog("登出平台", "平台账户", state.currentInstitution);
   state.currentView = "dashboard";
   state.currentAccount = "未登录";
   state.currentOperator = "未登录";
   state.currentInstitution = "用户";
-  state.customAvatar = "";
   state.hasPermissionAdmin = false;
   document.querySelector("#appShell").classList.add("hidden-app");
   document.querySelector("#loginView").classList.remove("hidden-app");
@@ -2123,7 +2088,6 @@ function enterPlatform() {
   state.currentOperator = accountKey;
   state.currentInstitution = profile.institution;
   state.hasPermissionAdmin = Boolean(accountConfig.permissionAdmin && getPermissionRecord(accountKey)?.status === "有效");
-  state.customAvatar = localStorage.getItem(avatarStorageKey()) || "";
   document.querySelector("#loginView").classList.add("hidden-app");
   document.querySelector("#appShell").classList.remove("hidden-app");
   updateUserIdentityUI();
@@ -2175,8 +2139,6 @@ document.querySelector("#riskChangeNotificationTip").addEventListener("click", e
   updateRiskChangeNotification();
   switchView(item.dataset.targetView);
 });
-document.querySelector("#changeAvatarButton").addEventListener("click", chooseCurrentUserAvatar);
-document.querySelector("#avatarFileInput").addEventListener("change", updateCurrentUserAvatar);
 document.querySelector("#logoutButton").addEventListener("click", logoutPlatform);
 document.addEventListener("click", event => {
   if (!event.target.closest(".topbar-user-wrap")) closeTopbarUserMenu();

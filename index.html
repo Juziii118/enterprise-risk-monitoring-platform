@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>虚假流水企业监测平台</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260904i" />
+  <link rel="stylesheet" href="styles.css?v=20260904j" />
 </head>
 <body>
   <section id="loginView" class="login-view">
@@ -64,7 +64,6 @@
           </div>
         </div>
         <div class="user-card">
-          <div class="avatar">无</div>
           <div class="user-text">
             <strong id="sidebarUserName">未登录</strong>
             <span id="sidebarInstitution">用户</span>
@@ -87,9 +86,8 @@
           </div>
           <button id="quotaManagementButton" class="icon-button quota-button" type="button" title="额度管理" aria-label="额度管理">￥</button>
           <div class="topbar-user-wrap">
-            <button id="topbarUser" class="topbar-user" aria-expanded="false"><span class="avatar small">无</span><span id="topbarUserName">未登录</span><span class="chevron">⌄</span></button>
-            <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="changeAvatarButton" type="button">修改头像</button><button id="changePasswordButton" type="button" onclick="event.stopPropagation(); openPasswordModal(false)">修改密码</button></div>
-            <input id="avatarFileInput" class="hidden-app" type="file" accept="image/png,image/jpeg,image/webp" />
+            <button id="topbarUser" class="topbar-user" aria-expanded="false"><span id="topbarUserName">未登录</span><span class="chevron">⌄</span></button>
+            <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="changePasswordButton" type="button" onclick="event.stopPropagation(); openPasswordModal(false)">修改密码</button></div>
           </div>
         </div>
       </header>
@@ -254,6 +252,6 @@
   </div>
 
   <div id="toast" class="toast" role="status"></div>
-  <script src="app.js?v=20260904h"></script>
+  <script src="app.js?v=20260904i"></script>
 </body>
 </html>
