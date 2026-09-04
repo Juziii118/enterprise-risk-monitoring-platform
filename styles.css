@@ -836,8 +836,9 @@ body { line-height: 1.45; }
 .page-title-with-help { position: relative; display: inline-flex; align-items: center; gap: 8px; }
 .help-trigger { width: 18px; height: 18px; display: inline-grid; place-items: center; border: 1px solid #9bcfca; border-radius: 50%; color: var(--teal-ink); background: #f0f8f6; font-family: Georgia, serif; font-size: 12px; font-weight: 700; line-height: 1; cursor: help; }
 .help-trigger:focus-visible { outline: 2px solid rgba(78, 170, 161, .72); outline-offset: 2px; }
-.help-tooltip { position: absolute; z-index: 90; top: calc(100% + 9px); left: 0; width: 290px; display: grid; gap: 7px; padding: 13px 15px; border: 1px solid #d8e6e3; border-radius: 10px; background: #fff; box-shadow: 0 14px 32px rgba(22, 54, 70, .14); color: #556c78; font-size: 11px; font-weight: 400; line-height: 1.5; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-4px); transition: opacity .16s ease, transform .16s ease, visibility .16s ease; }
+.help-tooltip { position: absolute; z-index: 90; top: calc(100% + 9px); left: 0; width: max-content; min-width: 320px; max-width: none; display: grid; gap: 7px; padding: 13px 15px; border: 1px solid #d8e6e3; border-radius: 10px; background: #fff; box-shadow: 0 14px 32px rgba(22, 54, 70, .14); color: #556c78; font-size: 11px; font-weight: 400; line-height: 1.5; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-4px); transition: opacity .16s ease, transform .16s ease, visibility .16s ease; }
 .help-tooltip strong { color: var(--ink); font-size: 12px; }
+.help-tooltip > strong, .help-tooltip > span { white-space: nowrap; }
 .help-trigger:hover + .help-tooltip, .help-trigger:focus + .help-tooltip { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
 
 @media (max-width: 860px) {
