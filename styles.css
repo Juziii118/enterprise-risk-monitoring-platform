@@ -993,6 +993,8 @@ html, body { background: var(--canvas); }
 .brand-logo-image { display: block; width: 34px; height: 34px; flex: 0 0 34px; object-fit: contain; }
 .login-brand-name { line-height: 34px; white-space: nowrap; }
 .sidebar-brand-name { min-width: 0; font-size: 13px; line-height: 34px; letter-spacing: 0; white-space: nowrap; }
+.sidebar-company-brand { gap: 0; padding: 2px 4px 30px; }
+.sidebar-company-logo { display: block; width: 195px; max-width: 100%; height: auto; object-fit: contain; object-position: left center; }
 .login-heading { margin: 32px 0 24px; }
 .login-heading h1 { margin-bottom: 0; }
 
