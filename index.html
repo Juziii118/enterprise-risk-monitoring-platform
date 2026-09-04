@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>虚假流水企业监测平台</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260904g" />
+  <link rel="stylesheet" href="styles.css?v=20260904i" />
 </head>
 <body>
   <section id="loginView" class="login-view">
@@ -71,7 +71,7 @@
           </div>
           <div class="user-actions">
             <button id="sidebarMore" class="more" title="更多操作" aria-label="更多操作">•••</button>
-            <div id="sidebarUserMenu" class="user-menu sidebar-user-menu"><button id="logoutButton" type="button">注销</button></div>
+            <div id="sidebarUserMenu" class="user-menu sidebar-user-menu"><button id="logoutButton" type="button">登出</button></div>
           </div>
         </div>
       </div>
@@ -88,7 +88,8 @@
           <button id="quotaManagementButton" class="icon-button quota-button" type="button" title="额度管理" aria-label="额度管理">￥</button>
           <div class="topbar-user-wrap">
             <button id="topbarUser" class="topbar-user" aria-expanded="false"><span class="avatar small">无</span><span id="topbarUserName">未登录</span><span class="chevron">⌄</span></button>
-            <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="renameUserButton" type="button">修改名称</button><button id="changePasswordButton" type="button" onclick="event.stopPropagation(); openPasswordModal(false)">修改密码</button></div>
+            <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="changeAvatarButton" type="button">修改头像</button><button id="changePasswordButton" type="button" onclick="event.stopPropagation(); openPasswordModal(false)">修改密码</button></div>
+            <input id="avatarFileInput" class="hidden-app" type="file" accept="image/png,image/jpeg,image/webp" />
           </div>
         </div>
       </header>
@@ -253,6 +254,6 @@
   </div>
 
   <div id="toast" class="toast" role="status"></div>
-  <script src="app.js?v=20260904g"></script>
+  <script src="app.js?v=20260904h"></script>
 </body>
 </html>

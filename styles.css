@@ -98,10 +98,16 @@ button { cursor: pointer; }
 .user-card { display: flex; align-items: center; gap: 9px; padding: 11px 10px; background: rgba(255,255,255,.07); border-radius: 11px; }
 .avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #d4f0eb; color: #277c77; font-size: 12px; font-weight: 700; }
 .avatar.small { width: 26px; height: 26px; font-size: 11px; }
+.avatar.has-image { background-color: #d4f0eb; background-position: center; background-repeat: no-repeat; background-size: cover; color: transparent; }
 .user-text { display: grid; gap: 4px; min-width: 0; }
 .user-text strong { font-size: 12px; font-weight: 500; color: #e5eef3; }
 .user-text span { color: #7894a8; font-size: 10px; }
 .more { color: #91a8b9; margin-left: auto; letter-spacing: 1px; }
+.user-card .avatar { flex: 0 0 30px; }
+.user-card .user-text { flex: 1 1 auto; overflow: hidden; }
+.user-card .user-text strong, .user-card .user-text span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-card .user-actions { flex: 0 0 26px; width: 26px; margin-left: auto; }
+.user-card .more { display: grid; width: 26px; height: 26px; margin: 0; padding: 0; place-items: center; }
 
 .main-area { min-width: 0; flex: 1; }
 .topbar { position: relative; z-index: 200; height: 74px; overflow: visible; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 38px; }
