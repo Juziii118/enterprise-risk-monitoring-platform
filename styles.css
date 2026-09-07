@@ -195,6 +195,14 @@ button { cursor: pointer; }
 .legend-row span { color: var(--muted); }
 .legend-row strong { font-size: 13px; }
 .legend-row small { color: var(--muted-2); font-size: 10px; margin-left: 4px; }
+.chart-area:has(.distribution-row) { gap: 16px; }
+.legend:has(.distribution-row) { min-width: 0; flex: 1; gap: 17px; }
+.distribution-row { grid-template-columns: 8px auto 1fr; column-gap: 6px; row-gap: 7px; }
+.distribution-row > span { white-space: nowrap; }
+.distribution-row > strong { justify-self: end; white-space: nowrap; font-size: 12px; }
+.distribution-row strong small { font-size: 11px; color: #617481; margin-left: 3px; font-weight: 400; }
+.distribution-track { grid-column: 2 / -1; height: 6px; overflow: hidden; border-radius: 2px; background: #edf0f2; }
+.distribution-fill { height: 100%; border-radius: inherit; }
 .trend-panel { margin-top: 18px; }
 .bar-chart { height: 145px; display: flex; align-items: end; justify-content: space-around; gap: 14px; padding: 10px 8px 0; border-bottom: 1px solid #eef2f4; }
 .bar-group { height: 100%; flex: 1; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 7px; }

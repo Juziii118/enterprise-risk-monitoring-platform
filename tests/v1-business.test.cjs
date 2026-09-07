@@ -49,6 +49,10 @@ test('full app: role isolation, successful single charge, failure rollback, filt
   for(const mode of ['preloan','postloan']) {
     a.run(`state.dashboardMode='${mode}';renderDashboard();`);
     assert.ok(a.dom.window.document.querySelector('#dashboardMonthSelect'));
+    const meters=[...a.dom.window.document.querySelectorAll('#dashboardView .distribution-track')];
+    assert.equal(meters.length,4);
+    const sum=meters.reduce((n,e)=>n+Number(e.getAttribute('aria-valuenow')),0);
+    assert.ok(sum===0 || Math.abs(sum-100)<0.03);
     assert.equal(a.dom.window.document.querySelectorAll('#dashboardView [data-v1-reset]').length,0);
   }
   if(!account.includes('@')) assert.equal(a.run('currentPostloanResults().every(r=>r.bankName===currentBankInstitution())'),true);

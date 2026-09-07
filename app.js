@@ -648,7 +648,10 @@ function riskDistributionMarkup(overview) {
   const mediumEnd = total ? (counts.high + counts.medium) / total * 100 : 0;
   const lowEnd = total ? (counts.high + counts.medium + counts.low) / total * 100 : 0;
   const donutStyle = `background:conic-gradient(var(--red) 0 ${highEnd}%, var(--orange) ${highEnd}% ${mediumEnd}%, var(--teal) ${mediumEnd}% ${lowEnd}%, #7d9bb5 ${lowEnd}% 100%)`;
-  const legendRow = (label, value, color) => `<div class="legend-row"><i class="legend-dot" style="background:${color}"></i><span>${label}</span><strong>${value.toLocaleString()} <small>${total ? (value / total * 100).toFixed(2) : "0.00"}%</small></strong></div>`;
+  const legendRow = (label, value, color) => {
+    const percent = total ? value / total * 100 : 0;
+    return `<div class="legend-row distribution-row"><i class="legend-dot" style="background:${color}"></i><span>${label}</span><strong>${value.toLocaleString()}<small>户次 · ${percent.toFixed(2)}%</small></strong><div class="distribution-track" role="meter" aria-label="${label}占比" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent.toFixed(2)}" aria-valuetext="${value}户次，占比${percent.toFixed(2)}%"><div class="distribution-fill" style="width:${percent}%;background:${color}"></div></div></div>`;
+  };
   const monthOptions = overview.months.map(month => `<option value="${escapeHTML(month)}" ${overview.selectedMonth === month ? "selected" : ""}>${escapeHTML(monthLabel(month))}</option>`).join("");
   return `<div class="panel"><div class="panel-header"><div><h3>风险分布</h3><p>按选定月份统计各风险等级结果户次</p></div><select class="select-input dashboard-month-select" id="dashboardMonthSelect">${monthOptions}</select></div><div class="panel-body chart-area"><div class="donut" style="${donutStyle}"><div class="donut-center"><strong>${total.toLocaleString()}</strong><span>企业户次</span></div></div><div class="legend">${legendRow("高风险", counts.high, "var(--red)")}${legendRow("中风险", counts.medium, "var(--orange)")}${legendRow("低风险", counts.low, "var(--teal)")}${legendRow("无风险", counts.none, "#7d9bb5")}</div></div></div>`;
 }
