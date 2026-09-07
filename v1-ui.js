@@ -73,17 +73,6 @@
         query: "", selectedRisk: "all", ...(type === "preloan" ? { preloanResultBankFilter: "all", preloanListFilter: "all" } : { postBankFilter: "all", postListQuery: "" })
       }, `${type}Page`, () => type === "preloan" ? renderPreloan() : renderPostloan());
     }
-    const month = $("#dashboardMonthSelect");
-    if (month && !month.parentElement.dataset.v1Month) {
-      const area = document.createElement("div");
-      area.dataset.v1Month = "true";
-      month.replaceWith(area);
-      area.append(month);
-      const mode = state.dashboardMode;
-      addReset(area, { [mode === "preloan" ? "dashboardPreloanMonth" : "dashboardPostloanMonth"]: "latest" }, null, () => {
-        renderDashboard();
-      });
-    }
   }
 
   const quotaDefaults = { quotaAccountFilter: "all", quotaTypeFilter: "all", quotaStartDate: "", quotaEndDate: "" };

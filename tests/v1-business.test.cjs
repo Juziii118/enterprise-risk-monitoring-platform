@@ -46,6 +46,11 @@ test('full app: role isolation, successful single charge, failure rollback, filt
  for(const account of ['001@jxphzx.com','江西银行','九江银行']) {
   a.run(`state.currentAccount=${JSON.stringify(account)};`);
   for(const render of ['renderDashboard','renderPreloan','renderPostloan','renderListManagement','renderAnomalyAlerts','renderQuota'])a.run(render+'()');
+  for(const mode of ['preloan','postloan']) {
+    a.run(`state.dashboardMode='${mode}';renderDashboard();`);
+    assert.ok(a.dom.window.document.querySelector('#dashboardMonthSelect'));
+    assert.equal(a.dom.window.document.querySelectorAll('#dashboardView [data-v1-reset]').length,0);
+  }
   if(!account.includes('@')) assert.equal(a.run('currentPostloanResults().every(r=>r.bankName===currentBankInstitution())'),true);
  }
  a.run(`state.currentAccount='001@jxphzx.com';renderLogs();renderPermissions();renderQuota();state.quotaTypeFilter='贷前筛查消费';`);
