@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>虚假流水企业监测平台</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260904j" />
+  <link rel="stylesheet" href="styles.css?v=20260907a" />
 </head>
 <body>
   <section id="loginView" class="login-view">
@@ -37,13 +37,13 @@
         <img class="sidebar-company-logo" src="company-logo.png" alt="公司标志" />
       </div>
 
-      <div class="sidebar-section-label"><span>业务工作台</span><button id="sidebarToggle" class="sidebar-pin" title="收起导航" aria-label="收起导航">📌</button></div>
+      <div class="sidebar-section-label"><span>业务工作台</span><button id="sidebarToggle" class="sidebar-pin" title="收起导航" aria-label="收起导航"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 3 8 0-1 6 4 4H5l4-4-1-6M12 13v8"/></svg></button></div>
       <button id="sidebarExpand" class="sidebar-expand" title="展开导航" aria-label="展开导航">›</button>
       <nav class="main-nav" aria-label="主导航">
-        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌂</span><span>工作台</span></button>
-        <button class="nav-item" data-view="preloan"><span class="nav-icon">⌕</span><span>贷前筛查</span><span class="nav-pill accent">即时</span></button>
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z"/></svg></span><span>工作台</span></button>
+        <button class="nav-item" data-view="preloan"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg></span><span>贷前筛查</span><span class="nav-pill accent">即时</span></button>
         <div class="nav-group">
-          <button class="nav-item" data-view="postloan"><span class="nav-icon">◷</span><span>贷中监控</span><span class="nav-pill accent">月度</span></button>
+          <button class="nav-item" data-view="postloan"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg></span><span>贷中监控</span><span class="nav-pill accent">月度</span></button>
           <button class="nav-subitem" data-view="listManagement"><span class="subnav-line"></span><span>名单管理</span></button>
           <button class="nav-subitem" data-view="anomalyAlerts"><span class="subnav-line"></span><span>异常提示</span></button>
         </div>
@@ -51,8 +51,8 @@
 
       <div id="systemManagementSection" class="sidebar-section-label sidebar-section-secondary"><span>系统管理</span></div>
       <nav id="systemManagementNav" class="main-nav log-nav" aria-label="系统管理导航">
-        <button class="nav-item log-nav-item" data-view="logs"><span class="nav-icon">▤</span><span>日志管理</span><span class="nav-pill">审计</span></button>
-        <button id="permissionsNav" class="nav-item log-nav-item permission-nav-item hidden-app" data-view="permissions"><span class="nav-icon">⚿</span><span>权限管理</span><span class="nav-pill">管理员</span></button>
+        <button class="nav-item log-nav-item" data-view="logs"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span>日志管理</span><span class="nav-pill">审计</span></button>
+        <button id="permissionsNav" class="nav-item log-nav-item permission-nav-item hidden-app" data-view="permissions"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></svg></span><span>权限管理</span><span class="nav-pill">管理员</span></button>
       </nav>
 
       <div class="sidebar-bottom">
@@ -60,7 +60,7 @@
           <span class="status-dot"></span>
           <div>
             <div class="status-title">数据服务正常</div>
-            <div id="lastUpdated" class="status-meta"><span class="status-meta-label">最近更新时间：</span><span id="lastUpdatedValue" class="status-timestamp">加载中</span></div>
+            <div id="lastUpdated" class="status-meta"><span class="status-meta-label">当前时间：</span><span id="lastUpdatedValue" class="status-timestamp">加载中</span></div>
           </div>
         </div>
         <div class="user-card">
@@ -81,10 +81,10 @@
         <div class="breadcrumb"><span>虚假流水企业监测平台</span><b>/</b><strong id="breadcrumbTitle">总览</strong></div>
         <div class="topbar-actions">
           <div id="notificationWrap" class="notification-wrap">
-            <button id="riskChangeNotification" class="icon-button notification-button" type="button" title="暂无消息提示" aria-label="暂无消息提示" aria-expanded="false" aria-controls="riskChangeNotificationTip"><span id="riskChangeNotificationDot" class="notification-dot hidden-app"></span>♢</button>
+            <button id="riskChangeNotification" class="icon-button notification-button" type="button" title="暂无消息提示" aria-label="暂无消息提示" aria-expanded="false" aria-controls="riskChangeNotificationTip"><span id="riskChangeNotificationDot" class="notification-dot hidden-app"></span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
             <div id="riskChangeNotificationTip" class="notification-popover" role="status"><div class="notification-empty">暂无消息提示</div></div>
           </div>
-          <button id="quotaManagementButton" class="icon-button quota-button" type="button" title="额度管理" aria-label="额度管理">￥</button>
+          <button id="quotaManagementButton" class="icon-button quota-button" type="button" title="额度管理" aria-label="额度管理"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 8V5H6a3 3 0 0 0 0 6h15v9H6a3 3 0 0 1-3-3V8"/><path d="M21 11h-5v5h5"/><path d="M18 13.5h.01"/></svg></button>
           <div class="topbar-user-wrap">
             <button id="topbarUser" class="topbar-user" aria-expanded="false"><span id="topbarUserName">未登录</span><span class="chevron">⌄</span></button>
             <div id="topbarUserMenu" class="user-menu topbar-user-menu"><button id="changePasswordButton" type="button" onclick="event.stopPropagation(); openPasswordModal(false)">修改密码</button></div>
@@ -252,6 +252,11 @@
   </div>
 
   <div id="toast" class="toast" role="status"></div>
-  <script src="app.js?v=20260904i"></script>
+  <script src="vendor/sheetjs-0.20.3/xlsx.full.min.js"></script>
+  <script src="v1-store.js?v=20260907a"></script>
+  <script src="import-validation.js?v=20260907a"></script>
+  <script src="app.js?v=20260907a"></script>
+  <script src="v1-integration.js?v=20260907a"></script>
+  <script src="v1-ui.js?v=20260907a"></script>
 </body>
 </html>

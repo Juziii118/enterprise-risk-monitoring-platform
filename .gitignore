@@ -2,4 +2,5 @@ _review_render/
 spark_sql/
 .DS_Store
 Thumbs.db
-
+node_modules/
+.pnpm-store/
