@@ -601,8 +601,9 @@ button, input, select { font-family: inherit; }
 .log-action:before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .log-table tbody tr { height: 58px; }
 .log-table td { height: 58px; }
-.log-table .log-action-cell { min-width: 150px; white-space: nowrap; }
-.log-table .log-action { width: max-content; min-height: 26px; flex-wrap: nowrap; line-height: 1; vertical-align: middle; }
+.log-table .log-action-cell { min-width: 150px; width: max-content; white-space: nowrap; word-break: normal; overflow-wrap: normal; }
+.log-table .log-action { display: inline-flex; width: max-content; min-width: max-content; min-height: 26px; flex-wrap: nowrap; white-space: nowrap; line-height: 1; vertical-align: middle; }
+.log-table .log-action-label { display: inline-block; flex: none; white-space: nowrap; word-break: normal; overflow-wrap: normal; }
 .log-table .log-action:before { flex: 0 0 5px; }
 .log-action.login, .log-action.view { color: #4e82c4; background: var(--blue-soft); border-color: #d9e5f4; }
 .log-action.import, .log-action.export { color: #2b8e86; background: var(--teal-soft); border-color: #cae9e4; }

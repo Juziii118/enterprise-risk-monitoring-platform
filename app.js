@@ -1152,7 +1152,7 @@ function logRows(records) {
       <td><strong class="log-date">${escapeHTML(log.date)}</strong><span class="log-id">${escapeHTML(log.id)}</span></td>
       <td><strong>${escapeHTML(log.bankName)}</strong></td>
       <td><strong>${escapeHTML(log.operator)}</strong><span class="log-account">${escapeHTML(log.account)}</span></td>
-      <td class="log-action-cell"><span class="log-action ${logActionClass(action)}">${escapeHTML(action)}</span></td>
+      <td class="log-action-cell"><span class="log-action ${logActionClass(action)}"><span class="log-action-label">${escapeHTML(action)}</span></span></td>
       <td class="muted-text">${escapeHTML(log.target)}</td>
       <td><span class="status-badge complete">${escapeHTML(log.result)}</span></td>
     </tr>`;

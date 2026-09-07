@@ -41,9 +41,9 @@
     };
     const control = existing || button("↺ 重置筛选", reset);
     control.dataset.v1Reset = "true";
-    control.style.marginLeft = "auto";
+    control.style.marginLeft = "0";
     control.style.flexShrink = "0";
-    Object.assign(toolbar.style, { display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", flex: "1" });
+    Object.assign(toolbar.style, { display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", justifyContent: "flex-end", marginLeft: "auto", flex: "0 1 auto" });
     toolbar.append(control);
     const panel = toolbar.closest(".panel, .preloan-list-box");
     if (panel && Object.entries(defaults).some(([key, value]) => state[key] !== value)) {
