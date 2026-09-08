@@ -2,7 +2,12 @@
 (function (root) {
   "use strict";
   const DAY = 86400000;
-  const events = ["授信前资金行为异常", "账户资金流转异常", "资金循环特征异常", "交易金额规律异常", "非营业时段交易异常", "经营流水波动异常", "交易信息完整性异常", "企业经营融资异常"];
+  const events = ["信贷节点资金异常", "账户资金流转异常", "资金循环特征异常", "交易金额规律异常", "非经营时段交易异常", "经营流水波动异常", "交易信息缺失异常", "企业经营融资异常", "信贷资金用途异常", "交易冲销退回异常"];
+  const eventAliases = {"授信前资金行为异常":"信贷节点资金异常", "非营业时段交易异常":"非经营时段交易异常", "交易信息完整性异常":"交易信息缺失异常"};
+  function migrateEventNames(state) {
+    const rows = [...(state.preloanHistory || []).flatMap(b => b.results || []), ...(state.batches || []).flatMap(b => b.rows || []), ...(state.preloanResults || []), ...(state.postloanResults || [])];
+    for (const row of rows) if (Array.isArray(row.events)) row.events = [...new Set(row.events.map(event => eventAliases[event] || event))];
+  }
   const pad = n => String(n).padStart(2, "0");
   function parts(value = new Date()) {
     const d = new Date(new Date(value).getTime() + 8 * 3600000);
@@ -20,9 +25,9 @@
     const [year, month] = period.split("-").map(Number);
     const marker = (h + year * 12 + month + (scene === "preloan" ? 2 : 0)) % 11;
     let level = "none", selected = [];
-    if (marker === 0) { level = "high"; selected = events.slice(0, 3); }
+    if (marker === 0) { level = "high"; selected = [...events.slice(0, 3), events[8]]; }
     else if (marker === 1 || marker === 4) { level = "medium"; selected = marker === 1 ? [events[3], events[5]] : [events[4], events[6]]; }
-    else if (marker === 6) { level = "low"; selected = [events[7]]; }
+    else if (marker === 6) { level = "low"; selected = [events[7], events[9]]; }
     return {...enterprise, month: period, level, events: selected, ai: "已发布"};
   }
   function snapshot(enterprises, period, scene, listId, bankName) {
@@ -121,7 +126,7 @@
     }
     return {open,save,saveSoon,atomic,get ready(){return ready;}};
   }
-  const api={parts,dateKey,monthKey,timeText,at,shiftMonth,counts,risk,snapshot,batchId,statusAt,eligible,runDue,anomalies,prune,createPersistence};
+  const api={events,migrateEventNames,parts,dateKey,monthKey,timeText,at,shiftMonth,counts,risk,snapshot,batchId,statusAt,eligible,runDue,anomalies,prune,createPersistence};
   root.V1Core=api;
   if(typeof module!=="undefined") module.exports=api;
 })(typeof globalThis!=="undefined"?globalThis:this);

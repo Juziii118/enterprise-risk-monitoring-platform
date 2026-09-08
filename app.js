@@ -273,16 +273,18 @@ buildCurrentPostloanDataset();
 const levelText = { high: "高风险", medium: "中风险", low: "低风险", none: "无风险" };
 const levelClass = { high: "high", medium: "medium", low: "low", none: "none" };
 const riskEventDirections = {
-  "授信前资金行为异常": "核查授信前资金来源、资金用途及短期集中流入情况。",
+  "信贷节点资金异常": "核查授信、放款及还款等信贷节点前后的资金来源、流向及集中变动情况。",
   "账户资金流转异常": "核查账户间资金划转路径、收支节奏及异常资金去向。",
   "资金循环特征异常": "核查关联交易对手、资金回流路径及交易闭环情况。",
   "交易金额规律异常": "核查交易金额分布、整数金额占比及异常拆分情况。",
-  "非营业时段交易异常": "核查非营业时段交易的业务背景、交易对手和必要性。",
+  "非经营时段交易异常": "核查非经营时段交易的业务背景、交易对手和必要性。",
   "经营流水波动异常": "结合经营资料核查收入、回款及流水波动的合理性。",
-  "交易信息完整性异常": "核查交易摘要、对手信息及相关业务凭证的完整性。",
-  "企业经营融资异常": "结合企业经营状况和融资信息核查资金需求及偿债安排。"
+  "交易信息缺失异常": "核查缺失的交易摘要、对手信息及相关业务凭证，确认交易背景。",
+  "企业经营融资异常": "结合企业经营状况和融资信息核查资金需求及偿债安排。",
+  "信贷资金用途异常": "核查信贷资金实际流向与约定用途是否一致，并结合合同及支付凭证核实。",
+  "交易冲销退回异常": "核查交易冲销、退款及退回的原因、频次与原交易对应关系。"
 };
-const coreRiskEvents = new Set(["授信前资金行为异常", "账户资金流转异常", "资金循环特征异常", "交易金额规律异常"]);
+const coreRiskEvents = new Set(V1Core.events.slice(0, 4));
 const roleProfiles = {
   bank: { name: "风险管理岗", institution: "用户" },
   operator: { name: "产品运营人员", institution: "平台运营中心" },
@@ -666,7 +668,7 @@ function operatorStatMarkup(overview, mode) {
 function dashboardRiskEventRows(mode) {
   const levelWeight = { high: 3, medium: 2, low: 1, none: 0 };
   const rows = mode === "preloan" ? currentPreloanResults() : currentPostloanResults();
-  const eventMap = new Map();
+  const eventMap = new Map(V1Core.events.map(event => [event, { event, count: 0, level: "none", enterprises: new Set() }]));
   rows.forEach(row => (row.events || []).forEach(event => {
     if (!eventMap.has(event)) eventMap.set(event, { event, count: 0, level: "none", enterprises: new Set() });
     const item = eventMap.get(event);

@@ -49,6 +49,13 @@ test('full app: role isolation, successful single charge, failure rollback, filt
   for(const mode of ['preloan','postloan']) {
     a.run(`state.dashboardMode='${mode}';renderDashboard();`);
     assert.ok(a.dom.window.document.querySelector('#dashboardMonthSelect'));
+    assert.equal(a.run(`dashboardRiskEventRows('${mode}').length`),10);
+    assert.equal(a.run('coreRiskEvents.size'),4);
+    assert.equal(a.run('V1Core.events.filter(e=>!coreRiskEvents.has(e)).length'),6);
+    const namesOnly=a.run('formatRiskEvents(V1Core.events)');
+    assert.ok(!namesOnly.includes('核心风险事件'));
+    for(const event of core.events) assert.ok(namesOnly.includes(event));
+    assert.match(a.dom.window.document.querySelector('#dashboardView').textContent,/共 10 类风险事件/);
     const meters=[...a.dom.window.document.querySelectorAll('#dashboardView .distribution-track')];
     assert.equal(meters.length,4);
     const sum=meters.reduce((n,e)=>n+Number(e.getAttribute('aria-valuenow')),0);

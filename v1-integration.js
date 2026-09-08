@@ -61,6 +61,7 @@ function captureV1Business(){return {schema:1,state:Object.fromEntries(persisten
 function restoreV1Business(saved){
   if(saved.schema!==1||!saved.state||!saved.accounts)throw new Error('本地数据版本不兼容，请先备份浏览器数据');
   for(const key of persistentKeys) if(saved.state[key]!==undefined)state[key]=saved.state[key];
+  V1Core.migrateEventNames(state);
   for(const key of Object.keys(demoAccounts))delete demoAccounts[key];Object.assign(demoAccounts,saved.accounts);
   state.postloanResults=state.batches.filter(b=>b.period===V1Core.monthKey()&&Array.isArray(b.rows)).flatMap(b=>b.rows);
 }
