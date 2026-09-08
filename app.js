@@ -757,7 +757,7 @@ function renderDashboard() {
 }
 
 function resultRows(results, type, includeListId = false, includeBank = false) {
-  if (!results.length) return `<tr><td colspan="${5 + (includeListId ? 1 : 0) + (includeBank ? 1 : 0)}"><div class="empty-state">没有符合条件的结果</div></td></tr>`;
+  if (!results.length) return `<tr><td colspan="${4 + (includeListId ? 1 : 0) + (includeBank ? 1 : 0)}"><div class="empty-state">没有符合条件的结果</div></td></tr>`;
   return results.map(row => `<tr>
     <td><div class="company-cell"><strong>${escapeHTML(row.name)}</strong><span>${escapeHTML(row.code)}</span></div></td>
     ${includeListId ? `<td><span class="list-id table-list-id">${escapeHTML(row.listId || "—")}</span></td>` : ""}
@@ -765,7 +765,6 @@ function resultRows(results, type, includeListId = false, includeBank = false) {
     <td>${escapeHTML(row.month)}</td>
     <td>${riskBadge(row.level)}</td>
     <td><div class="rule-tags">${formatRiskEvents(row.events || [])}</div></td>
-    <td><div class="row-actions"><button class="text-button ai" data-result-code="${escapeHTML(row.code)}" data-result-list-id="${escapeHTML(row.listId || "")}" data-result-type="${type}">AI解读</button><button class="text-button" data-export-code="${escapeHTML(row.code)}" data-export-list-id="${escapeHTML(row.listId || "")}" data-result-type="${type}">导出</button></div></td>
   </tr>`).join("");
 }
 
@@ -801,7 +800,7 @@ function resultTable(results, type, title = "监测结果", description = "一�
   const bankFilterClass = isBankUser() ? " hidden-app" : "";
   const riskFilter = `<select class="select-input" id="riskFilter"><option value="all">全部风险等级</option><option value="high" ${state.selectedRisk === "high" ? "selected" : ""}>高风险</option><option value="medium" ${state.selectedRisk === "medium" ? "selected" : ""}>中风险</option><option value="low" ${state.selectedRisk === "low" ? "selected" : ""}>低风险</option><option value="none" ${state.selectedRisk === "none" ? "selected" : ""}>无风险</option></select>`;
   const resultFilters = type === "postloan" ? `<select class="select-input${bankFilterClass}" id="postBankFilter"><option value="all">全部银行机构</option>${[...new Set(state.listRecords.map(item => item.bankName))].map(bank => `<option value="${escapeHTML(bank)}" ${state.postBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><select class="select-input list-filter-input" id="postListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.postListQuery === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select>` : type === "preloan" && showScopeFilters ? `<select class="select-input${bankFilterClass}" id="preloanResultBankFilter"><option value="all">全部银行机构</option>${resultBankOptions.map(bank => `<option value="${escapeHTML(bank)}" ${state.preloanResultBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><select class="select-input list-filter-input" id="preloanListFilter"><option value="all">全部名单编号</option>${listOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.preloanListFilter === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select>` : "";
-  return `<div class="panel result-panel"><div class="panel-header"><div><h3>${title}</h3><p>${description}</p></div><div class="result-toolbar"><input class="search-input" id="resultSearch" type="search" placeholder="搜索企业名称或代码" value="${escapeHTML(state.query)}"/>${riskFilter}${resultFilters}<button class="button ghost" id="exportAll">↓ 导出结果</button></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>企业名称 / 组织机构代码</th>${includeListId ? "<th>名单编号</th>" : ""}${includeBank ? "<th>银行机构</th>" : ""}<th>${monthLabelText}</th><th>风险等级</th><th>风险事件</th><th>操作</th></tr></thead><tbody>${resultRows(pageRows, type, includeListId, includeBank)}</tbody></table></div>${paginationMarkup(filtered.length, page, pageKey)}</div>`;
+  return `<div class="panel result-panel"><div class="panel-header"><div><h3>${title}</h3><p>${description}</p></div><div class="result-toolbar"><input class="search-input" id="resultSearch" type="search" placeholder="搜索企业名称或代码" value="${escapeHTML(state.query)}"/>${riskFilter}${resultFilters}<button class="button ghost" id="exportAll">↓ 导出结果</button></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>企业名称 / 组织机构代码</th>${includeListId ? "<th>名单编号</th>" : ""}${includeBank ? "<th>银行机构</th>" : ""}<th>${monthLabelText}</th><th>风险等级</th><th>风险事件</th></tr></thead><tbody>${resultRows(pageRows, type, includeListId, includeBank)}</tbody></table></div>${paginationMarkup(filtered.length, page, pageKey)}</div>`;
 }
 
 function bindResultEvents(results, type) {
@@ -830,15 +829,7 @@ function bindResultEvents(results, type) {
     state[button.dataset.pageKey] = Number(button.dataset.page);
     renderCurrentView();
   }));
-  root.querySelectorAll("[data-result-code]").forEach(button => button.addEventListener("click", () => {
-    const row = results.find(item => item.code === button.dataset.resultCode && (!button.dataset.resultListId || item.listId === button.dataset.resultListId));
-    openAiModal(row, button.dataset.resultType);
-  }));
-  root.querySelectorAll("[data-export-code]").forEach(button => button.addEventListener("click", () => {
-    const row = results.find(item => item.code === button.dataset.exportCode && (!button.dataset.exportListId || item.listId === button.dataset.exportListId));
-    if (!row) return;
-    exportResults([row], `${row.name}-风险结果`, true, type);
-  }));
+
 }
 
 function refreshExpiredListStatuses(now = new Date()) {
