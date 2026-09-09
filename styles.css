@@ -1418,5 +1418,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, .text-button:fo
 .result-data-table :is(th, td).result-col-bank { width: 130px; min-width: 130px; max-width: 130px; }
 .result-data-table :is(th, td).result-col-month { width: 110px; min-width: 110px; max-width: 110px; }
 .result-data-table :is(th, td).result-col-level { width: 100px; min-width: 100px; max-width: 100px; }
-.result-data-table :is(th, td).result-col-events { min-width: 480px; white-space: nowrap; }
-.result-data-table .result-col-events .rule-tags { width: max-content; min-width: max-content; flex-wrap: nowrap; white-space: nowrap; }
+.result-data-table :is(th, td).result-col-events { min-width: 480px; white-space: nowrap; text-align: center; }
+.result-data-table .result-col-company .company-cell strong { font-size: 12px; font-weight: 650; }
+.result-data-table .result-col-events .rule-tags { width: max-content; min-width: max-content; margin-inline: auto; align-items: center; justify-content: center; flex-wrap: nowrap; white-space: nowrap; text-align: center; }
+
+/* Post-loan history uses a stable ten-row paginated table. */
+.postloan-history-table :is(th, td):nth-child(1) { width: 120px; min-width: 120px; max-width: 120px; }
+.postloan-history-table :is(th, td):nth-child(2) { width: 180px; min-width: 180px; max-width: 180px; }
+.postloan-history-table :is(th, td):nth-child(3) { width: 100px; min-width: 100px; max-width: 100px; }
+.postloan-history-table :is(th, td):nth-child(4) { width: 130px; min-width: 130px; max-width: 130px; }
+.postloan-history-table :is(th, td):nth-child(5) { width: 210px; min-width: 210px; max-width: 210px; }
+.postloan-history-table :is(th, td):nth-child(6) { width: 220px; min-width: 220px; max-width: 220px; }
+.postloan-history-table :is(th, td):nth-child(7) { width: 100px; min-width: 100px; max-width: 100px; }
+.postloan-history-table :is(th, td):nth-child(8) { width: 164px; min-width: 164px; max-width: 164px; }

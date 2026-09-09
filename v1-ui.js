@@ -67,7 +67,7 @@
     addReset($(".log-filters"), { logBankFilter: "all", logStartDate: "", logEndDate: "" }, "logPage", () => renderLogs(), $("#resetLogFilters"));
     addReset($(".permission-filters"), { permissionQuery: "", permissionTypeFilter: "all", permissionStatusFilter: "all" }, "permissionPage", () => renderPermissions());
     addReset($(".preloan-history-filters"), { preloanHistoryBankFilter: "all", preloanHistoryListQuery: "all", preloanHistoryStartDate: "", preloanHistoryEndDate: "" }, "preloanHistoryPage", () => renderPreloan());
-    addReset($(".batch-filter-toolbar"), { batchBankFilter: "all", batchListFilter: "all", batchMonthFilter: "all", batchStartDate: "", batchEndDate: "" }, null, () => renderPostloan());
+    addReset($(".batch-filter-toolbar"), { batchBankFilter: "all", batchListFilter: "all", batchMonthFilter: "all", batchStartDate: "", batchEndDate: "" }, "batchPage", () => renderPostloan());
     for (const type of ["preloan", "postloan"]) {
       addReset($(`#${type}View .result-toolbar`), {
         query: "", selectedRisk: "all", ...(type === "preloan" ? { preloanResultBankFilter: "all", preloanListFilter: "all" } : { postBankFilter: "all", postListQuery: "" })

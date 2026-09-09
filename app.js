@@ -33,6 +33,7 @@ const state = {
   logStartDate: "",
   logEndDate: "",
   batchMonthFilter: "all",
+  batchPage: 1,
   batchListFilter: "all",
   batchBankFilter: "all",
   currentAccount: "未登录",
@@ -783,7 +784,8 @@ function filteredResults(results, type = "preloan") {
 function paginationMarkup(total, page, pageKey, size = pageSize, showTotal = true) {
   const totalPages = Math.max(1, Math.ceil(total / size));
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1).map(number => `<button class="page-button ${number === page ? "active" : ""}" data-page-key="${pageKey}" data-page="${number}">${number}</button>`).join("");
-  return `<div class="result-pagination"><span>${showTotal ? `共 ${total} ${pageKey==="anomalyPage"?"条异常记录":"条企业记录"} · ` : ""}第 ${page}/${totalPages} 页</span><div class="page-controls"><button class="page-button" data-page-key="${pageKey}" data-page="${page - 1}" ${page === 1 ? "disabled" : ""}>‹</button>${pages}<button class="page-button" data-page-key="${pageKey}" data-page="${page + 1}" ${page === totalPages ? "disabled" : ""}>›</button></div></div>`;
+  const countUnit = pageKey === "anomalyPage" ? "条异常记录" : pageKey === "batchPage" ? "条监控批次" : "条企业记录";
+  return `<div class="result-pagination"><span>${showTotal ? `共 ${total} ${countUnit} · ` : ""}第 ${page}/${totalPages} 页</span><div class="page-controls"><button class="page-button" data-page-key="${pageKey}" data-page="${page - 1}" ${page === 1 ? "disabled" : ""}>‹</button>${pages}<button class="page-button" data-page-key="${pageKey}" data-page="${page + 1}" ${page === totalPages ? "disabled" : ""}>›</button></div></div>`;
 }
 
 function resultTable(results, type, title = "监测结果", description = "一家企业一行，多类风险事件合并展示", includeListId = false, showScopeFilters = true) {
@@ -1618,14 +1620,30 @@ function renderPostloan() {
   const visibleBatches = state.batches.filter(batch => belongsToCurrentBank(batch.bankName));
   const batchListOptions = [...new Set(visibleBatches.map(batch => batch.listId).filter(Boolean))];
   const batchBankOptions = [...new Set(visibleBatches.map(batch => batch.bankName).filter(Boolean))];
+  const batchPageSize = 10;
+  const batchTotalPages = Math.max(1, Math.ceil(filteredBatches.length / batchPageSize));
+  const batchPage = Math.min(Math.max(1, state.batchPage || 1), batchTotalPages);
+  state.batchPage = batchPage;
+  const batchPageStart = (batchPage - 1) * batchPageSize;
+  const batchPageEnd = batchPageStart + batchPageSize;
   view.innerHTML = `<div class="page-heading"><div><div class="eyebrow">Monthly monitoring</div><h1 class="page-title-with-help">贷中监控<span class="help-trigger" tabindex="0" aria-label="查看监控说明">?</span><span class="help-tooltip" role="tooltip"><strong>监控说明</strong><span>演示机制：页面打开时补执行符合条件的每月1日模拟任务，网页关闭期间不运行</span><span>管理方式：在左侧“名单管理”板块中，导入并管理企业名单</span><span>结果形式：一家企业一行，可批量导出</span><span>风险输出：风险等级、风险事件</span></span></h1></div></div>
     ${resultTable(currentResults, "postloan", "当前月度监测结果", `${monthLabel(currentMonthKey())}已完成批次 · ${currentResults.length} 条企业记录 · 按企业名称升序`, true)}
     <div class="panel monitor-table"><div class="panel-header"><div><h3>历史监控批次</h3><p>按银行机构、名单编号和监测时间范围查看已发布的监测结果</p></div><div class="batch-filter-toolbar"><select class="select-input" id="batchBankFilter"><option value="all">全部银行机构</option>${batchBankOptions.map(bank => `<option value="${escapeHTML(bank)}" ${state.batchBankFilter === bank ? "selected" : ""}>${escapeHTML(bank)}</option>`).join("")}</select><select class="select-input" id="batchListFilter"><option value="all">全部名单编号</option>${batchListOptions.map(listId => `<option value="${escapeHTML(listId)}" ${state.batchListFilter === listId ? "selected" : ""}>${escapeHTML(listId)}</option>`).join("")}</select><label class="date-filter"><span>从</span><input class="date-input" id="batchStartDate" type="date" value="${escapeHTML(state.batchStartDate)}" /></label><label class="date-filter"><span>到</span><input class="date-input" id="batchEndDate" type="date" value="${escapeHTML(state.batchEndDate)}" /></label><span class="muted-text">共 ${filteredBatches.length} 个批次</span></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>监测月份</th><th>名单编号</th><th>企业数量</th><th>银行机构</th><th>监测区间</th><th>风险分布</th><th>状态</th><th>完成时间</th><th>操作</th></tr></thead><tbody>${filteredBatches.length ? filteredBatches.map(batch => `<tr><td><strong>${batch.month}</strong></td><td><span class="list-id table-list-id">${escapeHTML(batch.listId || "—")}</span></td><td>${batch.total.toLocaleString()} 家</td><td>${escapeHTML(batch.bankName || "—")}</td><td class="muted-text">${batch.range}</td><td><span class="risk-badge high">${batch.high}</span><span class="risk-badge medium" style="margin-left:5px">${batch.medium}</span><span class="risk-badge low" style="margin-left:5px">${batch.low}</span><span class="risk-badge none" style="margin-left:5px">${batch.none}</span></td><td><span class="status-badge complete">${Array.isArray(batch.rows) ? batch.status : "待初始化"}</span></td><td class="muted-text">${batch.time}</td><td><button class="text-button" data-batch-export="${escapeHTML(batch.id)}" ${Array.isArray(batch.rows) ? "" : "disabled title=\"待初始化：缺少历史明细\""}>导出</button></td></tr>`).join("") : `<tr><td colspan="9"><div class="empty-state">没有符合条件的历史监控批次</div></td></tr>`}</tbody></table></div></div>`;
+  const batchPanel = document.querySelector(".monitor-table");
+  const batchTable = batchPanel.querySelector(".data-table");
+  batchTable.classList.add("postloan-history-table");
+  if (filteredBatches.length) [...batchTable.tBodies[0].rows].forEach((row, index) => {
+    if (index < batchPageStart || index >= batchPageEnd) row.remove();
+  });
+  batchPanel.insertAdjacentHTML("beforeend", paginationMarkup(filteredBatches.length, batchPage, "batchPage", batchPageSize));
   if (isBankUser()) document.querySelector("#batchBankFilter").classList.add("hidden-app");
-  document.querySelector("#batchListFilter").addEventListener("change", event => { state.batchListFilter = event.target.value; renderPostloan(); });
-  document.querySelector("#batchBankFilter").addEventListener("change", event => { state.batchBankFilter = event.target.value; renderPostloan(); });
-  document.querySelector("#batchStartDate").addEventListener("change", event => { state.batchStartDate = event.target.value; renderPostloan(); });
-  document.querySelector("#batchEndDate").addEventListener("change", event => { state.batchEndDate = event.target.value; renderPostloan(); });
+  document.querySelector("#batchListFilter").addEventListener("change", event => { state.batchListFilter = event.target.value; state.batchPage = 1; renderPostloan(); });
+  document.querySelector("#batchBankFilter").addEventListener("change", event => { state.batchBankFilter = event.target.value; state.batchPage = 1; renderPostloan(); });
+  document.querySelector("#batchStartDate").addEventListener("change", event => { state.batchStartDate = event.target.value; state.batchPage = 1; renderPostloan(); });
+  document.querySelector("#batchEndDate").addEventListener("change", event => { state.batchEndDate = event.target.value; state.batchPage = 1; renderPostloan(); });
+  document.querySelectorAll("[data-page-key='batchPage']").forEach(button => button.addEventListener("click", () => {
+    if (!button.disabled) { state.batchPage = Number(button.dataset.page); renderPostloan(); }
+  }));
   document.querySelectorAll("[data-batch-export]").forEach(button => button.addEventListener("click", () => downloadPostloanBatch(button.dataset.batchExport)));
   bindResultEvents(currentResults, "postloan");
   updateRiskChangeNotification();
@@ -1702,7 +1720,7 @@ function renderCurrentView() { if (state.currentView === "dashboard") renderDash
 function switchView(view) {
   refreshAccountValidity();
   if (view === "permissions" && !canViewPermissionManagement()) { state.hasPermissionAdmin = false; showToast("当前账号暂无权限访问权限管理"); return; }
-  state.currentView = view; state.query = ""; state.selectedRisk = "all"; state.preloanListFilter = "all"; state.preloanResultBankFilter = "all"; state.postBankFilter = "all"; state.postListQuery = ""; state.listBankFilter = "all"; state.listIdQuery = ""; state.batchMonthFilter = "all"; state.batchListFilter = "all"; state.batchBankFilter = "all"; state.batchStartDate = ""; state.batchEndDate = ""; state.anomalyPage = 1; state.anomalyBankFilter = "all"; state.anomalyListFilter = "all"; state.anomalyCurrentLevelFilter = "all"; state.anomalyPreviousLevelFilter = "all";
+  state.currentView = view; state.query = ""; state.selectedRisk = "all"; state.preloanListFilter = "all"; state.preloanResultBankFilter = "all"; state.postBankFilter = "all"; state.postListQuery = ""; state.listBankFilter = "all"; state.listIdQuery = ""; state.batchMonthFilter = "all"; state.batchPage = 1; state.batchListFilter = "all"; state.batchBankFilter = "all"; state.batchStartDate = ""; state.batchEndDate = ""; state.anomalyPage = 1; state.anomalyBankFilter = "all"; state.anomalyListFilter = "all"; state.anomalyCurrentLevelFilter = "all"; state.anomalyPreviousLevelFilter = "all";
   const parentView = ["listManagement", "anomalyAlerts"].includes(view) ? "postloan" : view;
   document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === parentView));
   document.querySelectorAll(".nav-subitem").forEach(item => item.classList.toggle("active", item.dataset.view === view));
