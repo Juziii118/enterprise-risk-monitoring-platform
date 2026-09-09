@@ -55,7 +55,10 @@ test('full app: role isolation, successful single charge, failure rollback, filt
     const namesOnly=a.run('formatRiskEvents(V1Core.events)');
     assert.ok(!namesOnly.includes('核心风险事件'));
     for(const event of core.events) assert.ok(namesOnly.includes(event));
-    assert.match(a.dom.window.document.querySelector('#dashboardView').textContent,/共 10 类风险事件/);
+    const positiveEvents=a.run(`dashboardRiskEventRows('${mode}').filter(item=>item.count>0).length`);
+    assert.ok(a.dom.window.document.querySelector('#dashboardView').textContent.includes(`共 ${positiveEvents} 类风险事件`));
+    assert.ok(a.dom.window.document.querySelectorAll('#dashboardView .risk-event-row').length<=5);
+    for(const count of a.dom.window.document.querySelectorAll('#dashboardView .risk-event-count')) assert.ok(parseInt(count.textContent,10)>0);
     const meters=[...a.dom.window.document.querySelectorAll('#dashboardView .distribution-track')];
     assert.equal(meters.length,4);
     const sum=meters.reduce((n,e)=>n+Number(e.getAttribute('aria-valuenow')),0);

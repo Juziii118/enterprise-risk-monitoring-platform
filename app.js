@@ -704,8 +704,8 @@ function dashboardRiskEventDetailRows(mode, eventName) {
 }
 
 function dashboardRiskEventMarkup(mode) {
-  const items = dashboardRiskEventRows(mode);
-  const pageSize = 4;
+  const items = dashboardRiskEventRows(mode).filter(item => item.count > 0);
+  const pageSize = 5;
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
   const currentPage = Math.min(Math.max(1, state.dashboardEventPage[mode] || 1), totalPages);
   state.dashboardEventPage[mode] = currentPage;
