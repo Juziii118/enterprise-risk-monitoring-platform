@@ -195,8 +195,11 @@ button { cursor: pointer; }
 .legend-row span { color: var(--muted); }
 .legend-row strong { font-size: 13px; }
 .legend-row small { color: var(--muted-2); font-size: 10px; margin-left: 4px; }
-.chart-area:has(.distribution-row) { gap: 16px; }
-.legend:has(.distribution-row) { min-width: 0; flex: 1; gap: 17px; }
+.chart-area:has(.distribution-row) { display: grid; grid-template-columns: minmax(144px, 2fr) minmax(0, 3fr); gap: 0; }
+.chart-area:has(.distribution-row) .donut { width: 144px; height: 144px; justify-self: center; }
+.chart-area:has(.distribution-row) .donut:after { width: 90px; height: 90px; }
+.chart-area:has(.distribution-row) .donut-center strong { font-size: 23px; }
+.legend:has(.distribution-row) { min-width: 0; width: 100%; gap: 17px; padding-left: 10px; }
 .distribution-row { grid-template-columns: 8px auto 1fr; column-gap: 6px; row-gap: 7px; }
 .distribution-row > span { white-space: nowrap; }
 .distribution-row > strong { justify-self: end; white-space: nowrap; font-size: 12px; }
@@ -1391,6 +1394,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .text-button:fo
 }
 .preloan-history-table th:nth-child(4) { width: 190px; }
 .preloan-history-table th:nth-child(5) { width: 164px; }
+.preloan-history-table :is(th, td):nth-child(3) { width: 120px; min-width: 120px; max-width: 120px; }
 .monitor-table .data-table :is(th, td):nth-last-child(2):not([colspan]) {
   position: sticky; right: 60px; z-index: 2;
   min-width: 164px; white-space: nowrap;
