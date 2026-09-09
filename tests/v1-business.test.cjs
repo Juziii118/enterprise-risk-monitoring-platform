@@ -56,7 +56,7 @@ test('full app: role isolation, successful single charge, failure rollback, filt
     assert.ok(!namesOnly.includes('核心风险事件'));
     for(const event of core.events) assert.ok(namesOnly.includes(event));
     const positiveEvents=a.run(`dashboardRiskEventRows('${mode}').filter(item=>item.count>0).length`);
-    assert.ok(a.dom.window.document.querySelector('#dashboardView').textContent.includes(`共 ${positiveEvents} 类风险事件`));
+    assert.ok(a.dom.window.document.querySelector('#dashboardView').textContent.includes(`本月共触发 ${positiveEvents} 类风险事件`));
     assert.ok(a.dom.window.document.querySelectorAll('#dashboardView .risk-event-row').length<=5);
     for(const count of a.dom.window.document.querySelectorAll('#dashboardView .risk-event-count')) assert.ok(parseInt(count.textContent,10)>0);
     const meters=[...a.dom.window.document.querySelectorAll('#dashboardView .distribution-track')];

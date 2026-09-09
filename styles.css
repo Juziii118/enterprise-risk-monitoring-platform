@@ -167,7 +167,7 @@ button { cursor: pointer; }
 .stat-foot .up { color: var(--red); font-weight: 600; }
 
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.22fr) minmax(360px, .78fr); gap: 18px; }
-.operator-dashboard-grid { grid-template-columns: minmax(360px, .78fr) minmax(0, 1.22fr); }
+.operator-dashboard-grid { grid-template-columns: minmax(360px, 9fr) minmax(0, 11fr); }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
 .panel-header { padding: 18px 20px 0; display: flex; align-items: flex-start; justify-content: space-between; }
 .panel-header h3 { margin: 0; font-size: 15px; }
