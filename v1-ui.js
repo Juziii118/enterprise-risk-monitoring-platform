@@ -59,8 +59,8 @@
   function filters() {
     document.querySelectorAll('.data-table').forEach(table=>{
       const headers=[...table.querySelectorAll('thead th')];
-      const isPostloanCurrentResult = table.matches('#postloanView .result-data-table');
-      if(headers[0]?.textContent.includes('企业名称') && !isPostloanCurrentResult) table.classList.add('sticky-enterprise');
+      const isCurrentResult = table.classList.contains('result-data-table');
+      table.classList.toggle('sticky-enterprise', Boolean(headers[0]?.textContent.includes('企业名称')) && !isCurrentResult);
       if(headers.at(-1)?.textContent==='操作')table.classList.add('sticky-actions');
     });
     addReset($(".list-toolbar"), { listBankFilter: "all", listIdQuery: "" }, "listPage", () => renderListManagement());

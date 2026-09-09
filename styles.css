@@ -313,10 +313,10 @@ button { cursor: pointer; }
 .list-import-actions .select-input { flex: 0 0 150px; width: 150px; }
 .list-management-heading > div:first-child { min-width: 0; padding-right: 20px; }
 #postloanListFile { display: none; }
-.list-table .data-table th:nth-child(1) { width: calc(100% - 720px); }
+.list-table .data-table th:nth-child(1) { width: 180px; }
 .list-table .data-table th:nth-child(2) { width: 110px; }
 .list-table .data-table th:nth-child(3) { width: 90px; }
-.list-table .data-table th:nth-child(4) { width: 160px; }
+.list-table .data-table th:nth-child(4) { width: auto; }
 .list-table .data-table th:nth-child(5), .list-table .data-table th:nth-child(6) { width: 130px; }
 .list-id { color: #1d6075; font-weight: 700; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
 .list-count { font-variant-numeric: tabular-nums; font-weight: 700; }
@@ -1433,15 +1433,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, .text-button:fo
 .postloan-history-table.sticky-actions thead th:last-child:not([colspan]) { z-index: 7; }
 
 /* List management widths follow the field content; the action column stays compact. */
-.list-management-table { width: 100%; min-width: 895px; table-layout: fixed; }
-.list-management-table :is(th, td):nth-child(1) { width: calc(100% - 720px); }
+.list-management-table { width: 950px; min-width: 100%; table-layout: fixed; }
+.list-management-table :is(th, td):nth-child(1) { width: 180px; }
 .list-management-table :is(th, td):nth-child(2) { width: 110px; }
 .list-management-table :is(th, td):nth-child(3) { width: 90px; }
-.list-management-table :is(th, td):nth-child(4) { width: 160px; }
+.list-management-table :is(th, td):nth-child(4) { width: auto; }
 .list-management-table :is(th, td):nth-child(5),
 .list-management-table :is(th, td):nth-child(6) { width: 130px; }
 .list-management-table.sticky-actions :is(th, td):last-child:not([colspan]) {
-  width: 100px; min-width: 100px; max-width: 100px; text-align: center;
+  width: 150px; min-width: 150px; max-width: 150px; text-align: center;
 }
 .list-management-table.sticky-actions td:last-child:not([colspan]) { z-index: 4; }
 .list-management-table.sticky-actions thead th:last-child:not([colspan]) { z-index: 7; }
+.anomaly-table.sticky-enterprise tbody td:first-child:not([colspan]) { z-index: 4; background: var(--row-surface, #fff); }
+.anomaly-table.sticky-enterprise thead th:first-child { z-index: 7; background: #f2f4f5; }
+.anomaly-table .company-cell strong { font-size: 12px; font-weight: 650; }
