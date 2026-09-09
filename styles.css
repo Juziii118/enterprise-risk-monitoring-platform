@@ -1384,16 +1384,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, .text-button:fo
 /* History tables: compact downloads; keep the full completion time beside them. */
 .preloan-history-table :is(th, td),
 .monitor-table .data-table :is(th, td) { padding-left: 12px; padding-right: 12px; }
-.preloan-history-table :is(th, td):last-child:not([colspan]),
+.data-table.preloan-history-table :is(th, td):last-child:not([colspan]),
 .monitor-table .data-table :is(th, td):last-child:not([colspan]) {
-  width: 64px; min-width: 64px; max-width: 64px;
-  padding-left: 8px; padding-right: 16px; text-align: right;
+  width: 60px; min-width: 60px; max-width: 60px;
+  padding-left: 8px; padding-right: 8px; text-align: center;
 }
 .preloan-history-table th:nth-child(4) { width: 190px; }
 .preloan-history-table th:nth-child(5) { width: 164px; }
 .monitor-table .data-table :is(th, td):nth-last-child(2):not([colspan]) {
-  position: sticky; right: 64px; z-index: 2;
+  position: sticky; right: 60px; z-index: 2;
   min-width: 164px; white-space: nowrap;
   background: var(--row-surface, #fff); box-shadow: inset 1px 0 0 var(--line);
 }
 .monitor-table .data-table thead th:nth-last-child(2):not([colspan]) { z-index: 5; background: #f2f4f5; }
+
+/* Business tables use one consistent centered reading axis. */
+#preloanView .data-table :is(th, td),
+#postloanView .data-table :is(th, td),
+#listManagementView .data-table :is(th, td),
+#anomalyAlertsView .data-table :is(th, td) { text-align: center; }
+#preloanView .data-table :is(.row-actions, .rule-tags),
+#postloanView .data-table :is(.row-actions, .rule-tags),
+#listManagementView .data-table :is(.row-actions, .rule-tags),
+#anomalyAlertsView .data-table :is(.row-actions, .rule-tags) { justify-content: center; }
