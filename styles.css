@@ -1411,3 +1411,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, .text-button:fo
 #postloanView .data-table :is(.row-actions, .rule-tags),
 #listManagementView .data-table :is(.row-actions, .rule-tags),
 #anomalyAlertsView .data-table :is(.row-actions, .rule-tags) { justify-content: center; }
+
+/* Current result tables keep their key columns stable across pagination. */
+.result-data-table :is(th, td).result-col-company { width: 240px; min-width: 240px; max-width: 240px; }
+.result-data-table :is(th, td).result-col-list { width: 180px; min-width: 180px; max-width: 180px; }
+.result-data-table :is(th, td).result-col-bank { width: 130px; min-width: 130px; max-width: 130px; }
+.result-data-table :is(th, td).result-col-month { width: 110px; min-width: 110px; max-width: 110px; }
+.result-data-table :is(th, td).result-col-level { width: 100px; min-width: 100px; max-width: 100px; }
+.result-data-table :is(th, td).result-col-events { min-width: 480px; white-space: nowrap; }
+.result-data-table .result-col-events .rule-tags { width: max-content; min-width: max-content; flex-wrap: nowrap; white-space: nowrap; }
