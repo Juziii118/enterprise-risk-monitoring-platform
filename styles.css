@@ -1446,5 +1446,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .text-button:fo
 .list-management-table.sticky-actions td:last-child:not([colspan]) { z-index: 4; }
 .list-management-table.sticky-actions thead th:last-child:not([colspan]) { z-index: 7; }
 .anomaly-table.sticky-enterprise tbody td:first-child:not([colspan]) { z-index: 4; background: var(--row-surface, #fff); }
-.anomaly-table.sticky-enterprise thead th:first-child { z-index: 7; background: #f2f4f5; }
+#anomalyAlertsView .anomaly-table.sticky-enterprise thead th:first-child:not([colspan]) {
+  position: sticky; top: 0; left: 0; z-index: 7; background: #f2f4f5;
+}
 .anomaly-table .company-cell strong { font-size: 12px; font-weight: 650; }
