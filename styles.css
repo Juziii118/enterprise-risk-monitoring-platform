@@ -1412,15 +1412,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, .text-button:fo
 #listManagementView .data-table :is(.row-actions, .rule-tags),
 #anomalyAlertsView .data-table :is(.row-actions, .rule-tags) { justify-content: center; }
 
-/* Current result tables keep their key columns stable across pagination. */
-.result-data-table :is(th, td).result-col-company { width: 240px; min-width: 240px; max-width: 240px; }
-.result-data-table :is(th, td).result-col-list { width: 180px; min-width: 180px; max-width: 180px; }
-.result-data-table :is(th, td).result-col-bank { width: 130px; min-width: 130px; max-width: 130px; }
-.result-data-table :is(th, td).result-col-month { width: 110px; min-width: 110px; max-width: 110px; }
-.result-data-table :is(th, td).result-col-level { width: 100px; min-width: 100px; max-width: 100px; }
-.result-data-table :is(th, td).result-col-events { min-width: 480px; white-space: nowrap; text-align: center; }
+/* Current result tables fit the panel; risk events wrap after every third item. */
+.result-table-wrap { overflow-x: hidden; }
+.result-data-table { width: 100%; min-width: 0; table-layout: fixed; }
+.result-data-table :is(th, td).result-col-company { width: 20%; min-width: 0; max-width: none; }
+.result-data-table :is(th, td).result-col-list { width: 16%; min-width: 0; max-width: none; }
+.result-data-table :is(th, td).result-col-bank { width: 10%; min-width: 0; max-width: none; }
+.result-data-table :is(th, td).result-col-month { width: 9%; min-width: 0; max-width: none; }
+.result-data-table :is(th, td).result-col-level { width: 8%; min-width: 0; max-width: none; }
+.result-data-table :is(th, td).result-col-events { width: 37%; min-width: 0; max-width: none; white-space: normal; text-align: center; }
 .result-data-table .result-col-company .company-cell strong { font-size: 12px; font-weight: 650; }
-.result-data-table .result-col-events .rule-tags { width: max-content; min-width: max-content; margin-inline: auto; align-items: center; justify-content: center; flex-wrap: nowrap; white-space: nowrap; text-align: center; }
+.result-data-table .result-col-events .rule-tags { display: grid; grid-template-columns: repeat(3, max-content); width: 100%; min-width: 0; margin-inline: auto; align-items: center; justify-content: center; gap: 3px; white-space: normal; text-align: center; }
+.result-data-table .result-col-events .risk-event-chip { margin: 0; }
 
 /* Post-loan history uses a stable ten-row paginated table. */
 .postloan-history-table :is(th, td):nth-child(1) { width: 120px; min-width: 120px; max-width: 120px; }
