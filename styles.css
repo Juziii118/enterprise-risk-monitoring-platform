@@ -324,7 +324,7 @@ button { cursor: pointer; }
 .list-status:before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #52baa5; box-shadow: 0 0 0 4px rgba(82, 186, 165, .11); }
 .list-status.stopped { color: #87949d; }
 .list-status.stopped:before { background: #aeb9bf; box-shadow: none; }
-.list-actions { display: flex; gap: 10px; white-space: nowrap; }
+.list-actions { display: flex; align-items: center; justify-content: center; gap: 10px; white-space: nowrap; }
 .list-actions .text-button { color: #276c82; }
 .list-actions .text-button.manage { color: #98703b; }
 .list-manage-modal { width: min(540px, 100%); }
