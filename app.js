@@ -885,6 +885,7 @@ function renderListManagement() {
   postloanTemplateButton.textContent = "↓ 下载名单模板";
   postloanTemplateButton.addEventListener("click", () => V1Import.downloadTemplate());
   document.querySelector(".list-import-actions").appendChild(postloanTemplateButton);
+  view.querySelector(".list-table .data-table").classList.add("list-management-table");
   const canOperate = hasActiveAccountValidity() && currentPermissionLevel() !== "只读查看";
   const postloanBankSelect = document.querySelector("#importBankSelect");
   const postloanFile = document.querySelector("#postloanListFile");
