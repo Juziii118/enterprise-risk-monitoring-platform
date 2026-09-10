@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>虚假流水企业监测平台</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="stylesheet" href="styles.css?v=20260909-anomaly-header-layer" />
+  <link rel="stylesheet" href="styles.css?v=20260910-list-ai" />
 </head>
 <body>
   <section id="loginView" class="login-view">
@@ -217,6 +217,18 @@
     </div>
   </div>
 
+  <div id="listInterpretationModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="listInterpretationTitle">
+    <div class="modal list-interpretation-modal">
+      <div class="modal-header">
+        <h2 id="listInterpretationTitle">AI大模型解读</h2>
+        <button class="modal-close" data-close-list-interpretation aria-label="关闭">×</button>
+      </div>
+      <div id="listInterpretationBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <small>大模型仅用于规则结果的解释性生成，不参与风险等级判定、阈值配置与处置决策。</small>
+      </div>
+    </div>
+  </div>
   <div id="aiModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle">
     <div class="modal ai-modal">
       <div class="modal-header">
@@ -257,6 +269,6 @@
   <script src="import-validation.js?v=20260907a"></script>
   <script src="app.js?v=20260909-table-columns"></script>
   <script src="v1-integration.js?v=20260908-events10"></script>
-  <script src="v1-ui.js?v=20260909-table-columns"></script>
+  <script src="v1-ui.js?v=20260910-list-ai"></script>
 </body>
 </html>

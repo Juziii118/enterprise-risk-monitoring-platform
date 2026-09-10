@@ -46,6 +46,19 @@ test('full app: role isolation, successful single charge, failure rollback, filt
  for(const account of ['001@jxphzx.com','江西银行','九江银行']) {
   a.run(`state.currentAccount=${JSON.stringify(account)};`);
   for(const render of ['renderDashboard','renderPreloan','renderPostloan','renderListManagement','renderAnomalyAlerts','renderQuota'])a.run(render+'()');
+  for(const selector of ['.preloan-history-panel', '.monitor-table']) {
+    const ai=a.dom.window.document.querySelector(selector+' [data-list-interpretation]');
+    if (!ai) continue;
+    ai.click();
+    const modal=a.dom.window.document.querySelector('#listInterpretationModal');
+    assert.equal(modal.classList.contains('hidden'),false);
+    assert.ok(modal.querySelector('h2').textContent.startsWith('AI大模型解读-'));
+    assert.equal(modal.dataset.recordId,ai.dataset.listInterpretation);
+    assert.ok(modal.querySelector('small').textContent.includes('不参与风险等级判定、阈值配置与处置决策'));
+    assert.equal(ai.parentElement.lastElementChild.textContent,'导出');
+    modal.querySelector('[data-close-list-interpretation]').click();
+    assert.equal(modal.classList.contains('hidden'),true);
+  }
   for(const mode of ['preloan','postloan']) {
     a.run(`state.dashboardMode='${mode}';renderDashboard();`);
     assert.ok(a.dom.window.document.querySelector('#dashboardMonthSelect'));

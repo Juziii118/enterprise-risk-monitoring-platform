@@ -56,7 +56,43 @@
       });
     }
   }
+  function openListInterpretation(scene, id) {
+    const record = scene === "preloan"
+      ? state.preloanHistory.find(item => item.listId === id && item.queried !== false && belongsToCurrentBank(item.bankName))
+      : state.batches.find(item => item.id === id && belongsToCurrentBank(item.bankName));
+    if (!record) return;
+    $("#listInterpretationTitle").textContent = "AI大模型解读-" + record.listId;
+    const modal = $("#listInterpretationModal");
+    modal.dataset.scene = scene;
+    modal.dataset.recordId = id;
+    $("#listInterpretationBody").textContent = "暂无本份名单的AI解读内容，待接入外部接口后展示。";
+    modal.classList.remove("hidden");
+  }
+  function closeListInterpretation() { $("#listInterpretationModal").classList.add("hidden"); }
+  $$("[data-close-list-interpretation]").forEach(node => node.addEventListener("click", closeListInterpretation));
+  $("#listInterpretationModal").addEventListener("click", event => {
+    if (event.target.id === "listInterpretationModal") closeListInterpretation();
+  });
+  function historyInterpretationActions() {
+    for (const [selector, scene, key] of [
+      [".preloan-history-panel [data-preloan-history-download]", "preloan", "preloanHistoryDownload"],
+      [".monitor-table [data-batch-export]", "postloan", "batchExport"]
+    ]) {
+      $$(selector).forEach(exportButton => {
+        if (exportButton.closest(".history-list-actions")) return;
+        const group = document.createElement("div");
+        group.className = "history-list-actions";
+        const id = exportButton.dataset[key];
+        const ai = button("AI解读", () => openListInterpretation(scene, id), "text-button");
+        ai.dataset.listInterpretation = id;
+        exportButton.textContent = "导出";
+        exportButton.before(group);
+        group.append(ai, exportButton);
+      });
+    }
+  }
   function filters() {
+    historyInterpretationActions();
     document.querySelectorAll('.data-table').forEach(table=>{
       const headers=[...table.querySelectorAll('thead th')];
       const isCurrentResult = table.classList.contains('result-data-table');
@@ -241,6 +277,7 @@
   // Observe ONLY visibility classes on static overlay roots. No subtree or style
   // observation: our aria/tabindex/focus changes cannot retrigger this observer.
   const modalClose = {
+    listInterpretationModal: closeListInterpretation,
     aiModal: () => closeModal(), dashboardEventModal: () => closeDashboardEventModal(),
     listManageModal: () => closeListManageModal(), institutionModal: () => closeInstitutionModal(),
     permissionModal: () => closePermissionModal(), temporaryPasswordModal: () => closeTemporaryPasswordModal(),
