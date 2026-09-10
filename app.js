@@ -713,7 +713,7 @@ function dashboardRiskEventMarkup(mode) {
   const start = (currentPage - 1) * pageSize;
   const pageItems = items.slice(start, start + pageSize);
   const latestMonitorMonth = sortMonthKeys(state.batches.map(batch => monthKeyFromBatch(batch.month)))[0] || "";
-  const periodText = mode === "preloan" ? `${monthLabel(currentMonthKey())} · 截至当前日期` : `${monthLabel(currentMonthKey())} · 按本月已完成批次统计`;
+  const periodText = mode === "preloan" ? monthLabel(currentMonthKey()) : `${monthLabel(currentMonthKey())} · 按本月已完成批次统计`;
   const rowsMarkup = pageItems.length ? pageItems.map((item, index) => { const category = coreRiskEvents.has(item.event) ? "core" : "non-core"; const categoryText = category === "core" ? "核心风险事件" : "非核心风险事件"; return `<div class="risk-event-row"><span class="risk-event-rank">${start + index + 1}</span><div class="risk-event-copy"><strong class="risk-event-inline ${category}">${categoryText}：${escapeHTML(item.event)}</strong></div><button type="button" class="risk-event-count" data-dashboard-event="${escapeHTML(item.event)}" aria-label="查看${escapeHTML(item.event)}企业明细">${item.count.toLocaleString()}<small>家</small></button></div>`; }).join("") : `<div class="empty-state">当前月度暂无风险事件</div>`;
   const pageButtons = Array.from({ length: totalPages }, (_, index) => index + 1).map(page => `<button class="page-button ${page === currentPage ? "active" : ""}" data-dashboard-event-page="${page}">${page}</button>`).join("");
   return `<div class="panel risk-event-panel"><div class="panel-header"><div><h3>当前月度风险事件提示</h3><p>${mode === "preloan" ? "按当月已查询企业的风险事件数量排序" : "按本月跑批风险事件涉及企业数排序"}</p></div><span class="muted-text">${escapeHTML(periodText)}</span></div><div class="panel-body risk-event-list">${rowsMarkup}</div><div class="result-pagination risk-event-pagination"><span>本月共触发 ${items.length} 类风险事件 · 第 ${currentPage}/${totalPages} 页</span><div class="page-controls"><button class="page-button" data-dashboard-event-page="${currentPage - 1}" ${currentPage === 1 ? "disabled" : ""}>‹</button>${pageButtons}<button class="page-button" data-dashboard-event-page="${currentPage + 1}" ${currentPage === totalPages ? "disabled" : ""}>›</button></div></div></div>`;
@@ -1654,7 +1654,7 @@ function openDashboardEventModal(mode, eventName) {
   const rows = dashboardRiskEventDetailRows(mode, eventName);
   const category = coreRiskEvents.has(eventName) ? "核心风险事件" : "非核心风险事件";
   const categoryClass = coreRiskEvents.has(eventName) ? "core" : "non-core";
-  const periodText = mode === "preloan" ? `${monthLabel(currentMonthKey())} · 截至当前日期` : `${monthLabel(currentMonthKey())} · 跑批完成后更新`;
+  const periodText = mode === "preloan" ? monthLabel(currentMonthKey()) : `${monthLabel(currentMonthKey())} · 跑批完成后更新`;
   const includeBank = !isBankUser();
   const bankHeader = includeBank ? "<th>银行机构</th>" : "";
   const colSpan = includeBank ? 5 : 4;
