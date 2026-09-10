@@ -65,7 +65,39 @@
     const modal = $("#listInterpretationModal");
     modal.dataset.scene = scene;
     modal.dataset.recordId = id;
-    $("#listInterpretationBody").textContent = "暂无本份名单的AI解读内容，待接入外部接口后展示。";
+    const rows = scene === "preloan" ? record.results : record.rows;
+    const body = $("#listInterpretationBody");
+    body.replaceChildren();
+    const add = (tag, text, className = "") => {
+      const node = document.createElement(tag);
+      node.className = className;
+      node.textContent = text;
+      body.append(node);
+    };
+    add("p", "模拟解读 · 根据本份名单已保存的结果生成，仅用于页面展示和格式调整，非外部AI接口返回。", "list-ai-demo-note");
+    if (!Array.isArray(rows) || !rows.length) {
+      add("p", "该批次暂无完整企业结果，暂无法生成名单解读。");
+    } else {
+      const counts = { high: 0, medium: 0, low: 0, none: 0 };
+      const events = new Map();
+      rows.forEach(row => {
+        if (row.level in counts) counts[row.level]++;
+        [...new Set(row.events || [])].forEach(name => events.set(name, (events.get(name) || 0) + 1));
+      });
+      const ranked = [...events].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"));
+      const focus = counts.high + counts.medium;
+      add("p", (scene === "preloan" ? "贷前筛查" : "贷中监控") + " ｜ 数据月份：" + (rows[0].month || record.period || "—") + " ｜ 企业数量：" + rows.length + "家", "list-ai-meta");
+      add("h3", "一、名单整体结论");
+      add("p", "本份名单共包含" + rows.length + "家企业。已发布结果中，高风险" + counts.high + "家、中风险" + counts.medium + "家、低风险" + counts.low + "家、无风险" + counts.none + "家。" + (focus ? "其中，中高风险企业合计" + focus + "家，建议结合其触发的风险事件开展针对性核查。" : "当前未出现中高风险企业，仍应结合具体业务背景理解本次筛查结果。"));
+      add("h3", "二、风险事件归集");
+      add("p", ranked.length ? "本份名单共触发" + ranked.length + "类风险事件。同一家企业可能触发多类事件，以下各类企业数量不可直接相加。" : "本次结果未触发风险事件。未触发事件仅表示本次数据和策略范围内未出现相关提示，不代表对企业经营和信用状况作出保证。");
+      ranked.forEach(([name, count]) => add("p", name + "：" + count + "家。", "list-ai-event"));
+      add("h3", "三、建议核查方向");
+      ranked.slice(0, 4).forEach(([name]) => add("p", "针对“" + name + "”，" + (riskEventDirections[name] || "建议结合交易资料与实际业务背景进一步核实。")));
+      if (!ranked.length) add("p", "可按既有业务流程核验企业经营资料及资金用途，并持续关注后续监测结果。");
+      add("h3", "四、结果使用说明");
+      add("p", "上述内容仅对本份名单已发布的风险等级和事件进行归集解释，不新增或调整任何企业的风险等级。风险事件属于核查线索，不直接等同于已确认的虚假流水或欺诈事实；具体业务判断应结合核实材料及机构内部管理要求。");
+    }
     modal.classList.remove("hidden");
   }
   function closeListInterpretation() { $("#listInterpretationModal").classList.add("hidden"); }

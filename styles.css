@@ -1462,3 +1462,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, .text-button:fo
 .list-interpretation-modal .modal-body { min-height: 220px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.9; }
 .list-interpretation-modal .modal-footer { justify-content: flex-start; text-align: left; }
 .list-interpretation-modal .modal-footer small { font-size: 11px; color: #60727e; line-height: 1.7; }
+.list-interpretation-modal .modal-body { white-space: normal; font-size: 13px; text-align: left; }
+.list-interpretation-modal .modal-body h3 { margin: 22px 0 8px; font-size: 14px; color: #17364a; }
+.list-interpretation-modal .modal-body p { margin: 8px 0; }
+.list-ai-demo-note { padding: 10px 12px; background: #f2f5f6; color: #60727e; font-size: 11px; }
+.list-ai-meta { color: #60727e; font-size: 12px; }
+.list-interpretation-modal .modal-body .list-ai-event { margin: 4px 0; }
