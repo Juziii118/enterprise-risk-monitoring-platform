@@ -15,6 +15,46 @@
   }
   function dateKey(value = new Date()) { const p = parts(value); return `${p.y}-${pad(p.m)}-${pad(p.d)}`; }
   function monthKey(value = new Date()) { return dateKey(value).slice(0, 7); }
+  function migrateListIds(state) {
+    if (state.listIdMigrationVersion === 1) return 0;
+    const pattern = /\b(PF|ML|DQ|DZ)-(\d{8})-(\d{1,6})(?!\d)/g;
+    const entries = new Map();
+    function collect(value) {
+      if (typeof value === 'string') for (const m of value.matchAll(pattern)) {
+        if (!entries.has(m[0])) entries.set(m[0], {old:m[0], prefix:['PF','DQ'].includes(m[1])?'DQ':'DZ', day:m[2], order:Number(m[3]), time:null});
+      }
+      else if (Array.isArray(value)) value.forEach(collect);
+      else if (value && typeof value === 'object') Object.entries(value).forEach(([k,v])=>{collect(k);collect(v);});
+    }
+    collect(state);
+    const legacy = [...entries.values()].some(e=>/^(PF|ML)-/.test(e.old));
+    if (!legacy) {state.listIdMigrationVersion=1;return 0;}
+    for (const row of [...(state.preloanHistory||[]), ...(state.listRecords||[])]) {
+      const item=entries.get(row.listId||row.id);
+      if (!item) continue;
+      const imported = row.importDateKey || String(row.importAt||'').slice(0,10);
+      if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(imported)) item.day=imported.replace(/[-/]/g,'');
+      if (Number.isFinite(row.timestamp)) item.time=row.timestamp;
+    }
+    const groups=new Map(), mapping=new Map();
+    for(const e of entries.values()){const key=`${e.prefix}-${e.day}`;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(e);}
+    state.dailyListSequences ||= {};
+    for(const [key,items] of groups){
+      if(items.length>99999)throw new Error('测试名单迁移超出每日五位编号上限');
+      items.sort((a,b)=>(a.time??0)-(b.time??0)||a.order-b.order||a.old.localeCompare(b.old));
+      items.forEach((e,i)=>mapping.set(e.old,`${key}-${String(i+1).padStart(5,'0')}`));
+      state.dailyListSequences[key]=Math.max(Number(state.dailyListSequences[key]||0),items.length);
+    }
+    function replace(value){
+      if(typeof value==='string')return value.replace(pattern,id=>mapping.get(id)||id);
+      if(Array.isArray(value))return value.map(replace);
+      if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[replace(k),replace(v)]));
+      return value;
+    }
+    Object.assign(state,replace(state));
+    state.listIdMigrationVersion=1;
+    return [...mapping].filter(([a,b])=>a!==b).length;
+  }
   // One counter per scene and Beijing import day, shared by every bank in this local prototype.
   function nextListId(state, scene, now = new Date()) {
     const prefix = {preloan:'DQ', postloan:'DZ'}[scene];
@@ -142,7 +182,7 @@
     }
     return {open,save,saveSoon,atomic,get ready(){return ready;}};
   }
-  const api={events,migrateEventNames,parts,dateKey,monthKey,nextListId,timeText,at,shiftMonth,counts,risk,snapshot,batchId,statusAt,eligible,runDue,anomalies,prune,createPersistence};
+  const api={events,migrateEventNames,migrateListIds,parts,dateKey,monthKey,nextListId,timeText,at,shiftMonth,counts,risk,snapshot,batchId,statusAt,eligible,runDue,anomalies,prune,createPersistence};
   root.V1Core=api;
   if(typeof module!=="undefined") module.exports=api;
 })(typeof globalThis!=="undefined"?globalThis:this);

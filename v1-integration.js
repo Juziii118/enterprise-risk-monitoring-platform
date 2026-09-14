@@ -54,11 +54,12 @@ async function importEnterpriseFile(event,scene) {
   finally {input.value='';input.disabled=false;}
 }
 
-const persistentKeys=['listRecords','batches','preloanHistory','preloanArchive','dailyListSequences','logRecords','permissionAccounts','customBankNames','customInstitutionNames','quotaAccounts','quotaTransactions','notificationArchive','notificationReads'];
+const persistentKeys=['listRecords','batches','preloanHistory','preloanArchive','dailyListSequences','listIdMigrationVersion','logRecords','permissionAccounts','customBankNames','customInstitutionNames','quotaAccounts','quotaTransactions','notificationArchive','notificationReads'];
 function captureV1Business(){return {schema:1,state:Object.fromEntries(persistentKeys.map(k=>[k,state[k]])),accounts:structuredClone(demoAccounts)};}
 function restoreV1Business(saved){
   if(saved.schema!==1||!saved.state||!saved.accounts)throw new Error('本地数据版本不兼容，请先备份浏览器数据');
   state.dailyListSequences=saved.state.dailyListSequences || {};
+  state.listIdMigrationVersion=saved.state.listIdMigrationVersion || 0;
   for(const key of persistentKeys) if(saved.state[key]!==undefined)state[key]=saved.state[key];
   V1Core.migrateEventNames(state);
   for(const key of Object.keys(demoAccounts))delete demoAccounts[key];Object.assign(demoAccounts,saved.accounts);
@@ -68,7 +69,9 @@ window.V1Persistence=V1Core.createPersistence(captureV1Business,restoreV1Busines
 const v1LoginButton=document.querySelector('#loginButton');v1LoginButton.disabled=true;
 window.V1Ready=(async()=>{
   try {
-    await V1Persistence.open();refreshExpiredListStatuses();prunePreloanHistory();V1Core.runDue(state);
+    await V1Persistence.open();
+    await V1Persistence.atomic(()=>V1Core.migrateListIds(state));
+    refreshExpiredListStatuses();prunePreloanHistory();V1Core.runDue(state);
     await V1Persistence.save();renderDashboard();v1LoginButton.disabled=false;
   }catch(error){showBusinessDialog('本地数据库无法加载',error.message+'。请允许网站使用浏览器本地存储后刷新；不要清除原有数据。');throw error;}
 })();
