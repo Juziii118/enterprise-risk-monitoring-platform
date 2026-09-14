@@ -9,7 +9,7 @@ const state = {
   query: "",
   preloanPage: 1,
   preloanBank: "",
-  preloanListSequence: 1,
+  dailyListSequences: {},
   preloanListFilter: "all",
   preloanResultBankFilter: "all",
   preloanHistoryPage: 1,
@@ -183,7 +183,7 @@ function buildListRecords() {
     const statusHistory=[{at:imported.getTime(),status:"有效"}];
     if(status==="已中止") statusHistory.push({at:V1Core.at(`${V1Core.shiftMonth(month,-1)}-15`).getTime(),status});
     const enterprises=demoEnterpriseNames.slice().sort((a,b)=>a.localeCompare(b,"zh-CN")).slice(0,companyCount).map((name,i)=>({name,code:String(360100001+i),institutionCode:`C${String(i+1).padStart(13,"0")}`}));
-    return {id:`ML-${V1Core.dateKey(imported).replaceAll("-","")}-${pad(index+1)}`,bankName,companyCount,enterprises,importAt:formatDateTime(imported),timestamp:imported.getTime(),startDate:formatDate(imported),stopDate,status,statusHistory};
+    return {id:V1Core.nextListId(state,'postloan',imported),bankName,companyCount,enterprises,importAt:formatDateTime(imported),timestamp:imported.getTime(),startDate:formatDate(imported),stopDate,status,statusHistory};
   }).sort((a,b)=>b.timestamp-a.timestamp);
 }
 
@@ -192,7 +192,7 @@ function buildLogRecords() {
   return Array.from({ length: 64 }, (_, index) => {
     const date = new Date(base.getTime() - index * 7.6 * 3600000);
     const action = logActions[index % logActions.length];
-    const list = `ML-${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad((index % 46) + 1)}`;
+    const list = state.listRecords[index % state.listRecords.length]?.id || '演示名单';
     const target = action === "登录成功" || action === "登出平台" ? "平台账户" : action.includes("名单") ? list : action === "导出结果" ? "贷中监控结果" : "企业风险结果";
     return {
       id: `LOG-${String(index + 1).padStart(4, "0")}`,
@@ -225,11 +225,7 @@ function recordLog(action, target, institution = state.currentInstitution) {
 }
 
 function createPreloanListId(date = new Date()) {
-  const dateKey=V1Core.dateKey(date).replaceAll("-","");
-  let id;
-  do {id=`PF-${dateKey}-${String(state.preloanListSequence++).padStart(6,"0")}`;}
-  while([...state.preloanHistory,...(state.preloanArchive||[])].some(r=>r.listId===id));
-  return id;
+  return V1Core.nextListId(state, 'preloan', date);
 }
 
 function buildDemoResults(seed = 0, listId = state.listRecords[0]?.id, bankName = state.listRecords[0]?.bankName) {
@@ -1582,11 +1578,16 @@ function renderPreloan() {
     state.preloanBank = event.target.value;
   });
   if (isBankUser()) document.querySelector("#preloanBankSelect").classList.add("hidden-app");
-  document.querySelector("#demoPreloan").addEventListener("click", () => {
+  document.querySelector("#demoPreloan").addEventListener("click", async () => {
     if (!requireActiveBusinessAccount()) return;
     if (!state.preloanBank) { showToast("请先选择导入银行"); return; }
+    const actor = state.currentAccount;
+    try {
+    let listId;
+    await V1Persistence.atomic(() => {
+    if (actor !== state.currentAccount || !requireActiveBusinessAccount()) throw new Error('登录状态已变更，请重新导入');
     const queryDate = new Date();
-    const listId = createPreloanListId(queryDate);
+    listId = createPreloanListId(queryDate);
     state.preloanResults = buildDemoResults(0, listId, state.preloanBank);
     state.preloanPage = 1;
     state.preloanListFilter = "all";
@@ -1596,8 +1597,10 @@ function renderPreloan() {
     state.preloanSelectedListId = null;
     addPreloanHistory(listId, state.preloanBank, state.preloanResults, queryDate, false);
     recordLog("导入名单", listId, state.preloanBank);
+    });
     renderPreloan();
     showToast(`名单导入成功，已生成 ${listId}，请点击“查询”查看结果`);
+    } catch(error) { showToast(`导入失败：${error.message}`); }
   });
   document.querySelector("#preloanFile").addEventListener("change", handleFileUpload);
   if (selectedRecord) bindResultEvents(selectedRecord.results, "preloan");

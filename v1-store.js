@@ -15,6 +15,22 @@
   }
   function dateKey(value = new Date()) { const p = parts(value); return `${p.y}-${pad(p.m)}-${pad(p.d)}`; }
   function monthKey(value = new Date()) { return dateKey(value).slice(0, 7); }
+  // One counter per scene and Beijing import day, shared by every bank in this local prototype.
+  function nextListId(state, scene, now = new Date()) {
+    const prefix = {preloan:'DQ', postloan:'DZ'}[scene];
+    if (!prefix) throw new Error('未知名单类型');
+    const key = `${prefix}-${dateKey(now).replaceAll('-', '')}`;
+    const pattern = new RegExp(`^${key}-(\\d{5})$`);
+    state.dailyListSequences ||= {};
+    let last = Number(state.dailyListSequences[key] || 0);
+    for (const row of [...(state.preloanHistory || []), ...(state.preloanArchive || []), ...(state.listRecords || []), ...(state.batches || [])]) {
+      const match = String(row.listId || row.id || '').match(pattern);
+      if (match) last = Math.max(last, Number(match[1]));
+    }
+    if (!Number.isSafeInteger(last) || last < 0 || last >= 99999) throw new Error('当天该类名单编号已达99999份上限，无法继续导入');
+    state.dailyListSequences[key] = last + 1;
+    return `${key}-${String(last + 1).padStart(5, '0')}`;
+  }
   function timeText(value = new Date()) { const p = parts(value); return `${dateKey(value)} ${pad(p.h)}:${pad(p.min)}:${pad(p.s)}`; }
   function at(date, time = "00:00:00") { return new Date(`${String(date).replaceAll("/", "-")}T${time}+08:00`); }
   function shiftMonth(period, offset) { const [y, m] = period.replaceAll("/", "-").split("-").map(Number); const d = new Date(Date.UTC(y, m - 1 + offset, 1)); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`; }
@@ -126,7 +142,7 @@
     }
     return {open,save,saveSoon,atomic,get ready(){return ready;}};
   }
-  const api={events,migrateEventNames,parts,dateKey,monthKey,timeText,at,shiftMonth,counts,risk,snapshot,batchId,statusAt,eligible,runDue,anomalies,prune,createPersistence};
+  const api={events,migrateEventNames,parts,dateKey,monthKey,nextListId,timeText,at,shiftMonth,counts,risk,snapshot,batchId,statusAt,eligible,runDue,anomalies,prune,createPersistence};
   root.V1Core=api;
   if(typeof module!=="undefined") module.exports=api;
 })(typeof globalThis!=="undefined"?globalThis:this);

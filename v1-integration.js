@@ -44,9 +44,7 @@ async function importEnterpriseFile(event,scene) {
       const now=new Date();
       if(scene==='preloan') {id=createPreloanListId(now);addPreloanHistory(id,bank,parsed.rows,now,false);state.preloanSelectedListId=null;}
       else {
-        state.postloanListSequence=(state.postloanListSequence||0)+1;
-        id=`ML-${V1Core.dateKey(now).replaceAll('-','')}-${String(state.postloanListSequence).padStart(6,'0')}`;
-        while(state.listRecords.some(l=>l.id===id)){state.postloanListSequence++;id=`ML-${V1Core.dateKey(now).replaceAll('-','')}-${String(state.postloanListSequence).padStart(6,'0')}`;}
+        id=V1Core.nextListId(state,'postloan',now);
         state.listRecords.unshift({id,bankName:bank,companyCount:parsed.rows.length,enterprises:parsed.rows,importAt:formatDateTime(now),timestamp:now.getTime(),startDate:V1Core.dateKey(now),stopDate:V1Core.shiftMonth(V1Core.monthKey(now),12)+'-01',status:'有效',statusHistory:[{at:now.getTime(),status:'有效'}]});
       }
       recordLog('导入名单',id,bank);
@@ -56,10 +54,11 @@ async function importEnterpriseFile(event,scene) {
   finally {input.value='';input.disabled=false;}
 }
 
-const persistentKeys=['listRecords','batches','preloanHistory','preloanArchive','preloanListSequence','postloanListSequence','logRecords','permissionAccounts','customBankNames','customInstitutionNames','quotaAccounts','quotaTransactions','notificationArchive','notificationReads'];
+const persistentKeys=['listRecords','batches','preloanHistory','preloanArchive','dailyListSequences','logRecords','permissionAccounts','customBankNames','customInstitutionNames','quotaAccounts','quotaTransactions','notificationArchive','notificationReads'];
 function captureV1Business(){return {schema:1,state:Object.fromEntries(persistentKeys.map(k=>[k,state[k]])),accounts:structuredClone(demoAccounts)};}
 function restoreV1Business(saved){
   if(saved.schema!==1||!saved.state||!saved.accounts)throw new Error('本地数据版本不兼容，请先备份浏览器数据');
+  state.dailyListSequences=saved.state.dailyListSequences || {};
   for(const key of persistentKeys) if(saved.state[key]!==undefined)state[key]=saved.state[key];
   V1Core.migrateEventNames(state);
   for(const key of Object.keys(demoAccounts))delete demoAccounts[key];Object.assign(demoAccounts,saved.accounts);
